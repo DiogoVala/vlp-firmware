@@ -12,6 +12,8 @@
 #ifndef __LED_H_
 #define __LED_H_
 
+#include <stdint.h>
+
 #define LED_HW_ID 13 /* Physical ID of this LED*/
 
 /* General defs */

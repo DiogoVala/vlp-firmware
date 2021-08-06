@@ -8,8 +8,6 @@
       <itemPath>digPot.h</itemPath>
       <itemPath>spi.h</itemPath>
       <itemPath>utils.h</itemPath>
-      <itemPath>nRF24L01.h</itemPath>
-      <itemPath>nrf24.h</itemPath>
       <itemPath>uart.h</itemPath>
       <itemPath>ledInterface.h</itemPath>
       <itemPath>timer.h</itemPath>
@@ -25,7 +23,6 @@
       <itemPath>led.c</itemPath>
       <itemPath>main.c</itemPath>
       <itemPath>digPot.c</itemPath>
-      <itemPath>nrf24.c</itemPath>
       <itemPath>uart.c</itemPath>
       <itemPath>ledInterface.c</itemPath>
       <itemPath>timer.c</itemPath>

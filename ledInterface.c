@@ -18,11 +18,7 @@
 #include "utils.h"
 #include "digPot.h"
 
-#define COMMAND_LENGTH 7 // Number of command parameters + 1 
 const uint32_t DELAY_COUNT = F_CPU / 100; /* 10ms delay */
-
-volatile uint8_t TX_command_array[COMMAND_LENGTH] = {};
-extern volatile uint8_t RX_command_array[COMMAND_LENGTH];
 
 void startupLED(led_t* ledp) {
     setLEDIOpins();
@@ -62,26 +58,6 @@ void setLEDStatePin(uint8_t ledState) {
 void setHWLEDIntensity(uint8_t ledIntensity) {
     /* Define a posição do Wiper do Pot de acordo com a intensidade que se quer */
     digitalPotWrite(ledIntensity);
-}
-
-void buildLEDCommand(led_t* ledp) {
-    /* Array of bytes to send to RF module */
-    TX_command_array[ID] = getLedID(ledp);
-    TX_command_array[STATE] = getLedState(ledp);
-    TX_command_array[MODE] = getLedMode(ledp);
-    TX_command_array[INTENSITY] = getLedIntensity(ledp);
-    TX_command_array[FREQUENCY_LB] = (uint8_t) (getLedFrequency(ledp) & 0x00FF);
-    TX_command_array[FREQUENCY_HB] = (uint8_t) ((getLedFrequency(ledp) & 0xFF00) >> 8);
-    TX_command_array[DUTYCYCLE] = getLedDutyCycle(ledp);
-}
-
-void updateLEDParams(led_t* ledp) {
-    /* Update the LED parameters from received command */
-    setLedState(ledp, RX_command_array[ID]);
-    setLedMode(ledp, RX_command_array[STATE]);
-    setLedIntensity(ledp, RX_command_array[MODE]);
-    setLedFrequency(ledp, ((RX_command_array[FREQUENCY_HB] << 8) | RX_command_array[FREQUENCY_LB]));
-    setLedDutyCycle(ledp, RX_command_array[DUTYCYCLE]);
 }
 
 void setLEDIOpins() {

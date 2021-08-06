@@ -18,10 +18,11 @@
 /* File includes */
 #include "led.h"
 #include "ledInterface.h"
-#include "nrf24.h"
+//#include "RF24.h"
 #include "spi.h"
 #include "uart.h"
 #include "utils.h"
+#include "communication.h"
 
 #define INPUT_BUFFER_SIZE 8
 #define BITSTREAM_MAX_SIZE 30 /* Limited by the maximum payload length */
@@ -33,7 +34,7 @@
 #define MODE SLAVE /* Luminaries = SLAVE ; Controller = MASTER */
 #endif
 
-volatile uint8_t bitstream[BITSTREAM_MAX_SIZE] = {0};
+uint8_t bitstream[BITSTREAM_MAX_SIZE] = {0};
 
 #if (MODE == SLAVE)
 
@@ -112,7 +113,7 @@ int main() {
 
             switch (uart_char) {
 
-                case 'b': /* Start of bitsequence input */
+                case 'b': /* Start of bitstream input */
                 case 'B':
                     memset(bitstream, '\0', BITSTREAM_MAX_SIZE);
                     bitstreamIdx = 0;
