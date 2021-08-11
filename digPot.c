@@ -28,7 +28,7 @@ void digitalPotWrite(uint8_t LedIntensity)
     
     for( int i = 0; i < 5; i++);                           //NOTE: WHY THE DELAY?
     //  send in the address and value via SPI:
-    spi_transfer((uint8_t)D);
+    spi_exchange((uint8_t)D);
     for( int i = 0; i < 5; i++);
     /* Set the SS bit to deselect the slave line */
     set_bit(SPI_PORT,SPI_SS_DIGPOTSLAVE);

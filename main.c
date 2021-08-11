@@ -25,20 +25,19 @@
 #include "communication.h"
 
 #define INPUT_BUFFER_SIZE 8
-#define BITSTREAM_MAX_SIZE 30 /* Limited by the maximum payload length */
 
 #define BITSTREAM false
 #define COMMAND true
 
 #ifndef MODE
-#define MODE SLAVE /* Luminaries = SLAVE ; Controller = MASTER */
+#define MODE MASTER /* Luminaries = SLAVE ; Controller = MASTER */
 #endif
 
-uint8_t bitstream[BITSTREAM_MAX_SIZE] = {0};
+extern uint8_t bitstream[BITSTREAM_MAX_SIZE];
 
 #if (MODE == SLAVE)
 
-/* Em OOK+Manchester, só a ISR COMPA é utilizada, para definir os periodos
+/* Em OOK+Manchester, só a ISR COMPA é utilizada para definir os periodos
  * de cada bit. Em VPPM, esta também altera o valor do OCR1B conforme o bit
  * seja 0 ou 1.
  * A ISR COMPB muda o bit dentro do periodo OCR1A, de acordo com a codificação
@@ -46,17 +45,30 @@ uint8_t bitstream[BITSTREAM_MAX_SIZE] = {0};
  */
 ISR(TIMER1_COMPA_vect) // Timer1 ISR COMPA
 {
-    //static uint8_t PortMask;
-    //OCR1B = interface.getMessageByte(&PortMask);
-    /*MUDAR O BIT CTL */
+#if 0
+    uint8_t bit = Ler bit da bitstream
+    OCR1B = compB[bit];
+    if(bit) { 
+        set_bit(LED_PORT, LED_CTL); /* Turn on */
+    }
+    else {
+        clr_bit(LED_PORT, LED_CTL); /* Turn off */
+    }
+#endif
 }
 
 /* Controla o disparo de VPPM, conforme o duty cycle*/
 ISR(TIMER1_COMPB_vect) // Timer1 ISR COMPB
 {
-    //static uint8_t PortMask;
-    //interface.getMessageByte(&PortMask);
-    /*MUDAR O BIT CTL */
+#if 0
+    uint8_t bit = Ler bit da bitstream;
+    if(bit) { 
+        set_bit(LED_PORT, LED_CTL); /* Turn on */
+    }
+    else {
+        clr_bit(LED_PORT, LED_CTL); /* Turn off */
+    }
+#endif
 }
 #endif
 
@@ -158,7 +170,7 @@ int main() {
                     if(input_type==BITSTREAM)
                     {
                         bitstreamSize=bitstreamIdx;
-                        sendBitStream(bitstream, bitstreamSize);
+                        sendBitStream(bitstream, bitstreamSize, led.ledID);
                     }
                     else
                     {

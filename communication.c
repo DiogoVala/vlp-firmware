@@ -10,14 +10,45 @@
 
 #include "led.h"
 #include "ledInterface.h"
+#include "communication.h"
 
-#define COMMAND_LENGTH 7 // Number of command parameters + 1 
-
-volatile uint8_t TX_command_array[COMMAND_LENGTH] = {};
-volatile uint8_t RX_command_array[COMMAND_LENGTH] = {};
+uint8_t TX_command_array[COMMAND_LENGTH] = {};
+uint8_t RX_command_array[COMMAND_LENGTH] = {};
+uint8_t bitstream_byte_array[BITSTREAM_MAX_BYTES] = {0};
+uint8_t bitstream[BITSTREAM_MAX_SIZE] = {0};
 
 void sendBitStream(uint8_t bitstream[], uint8_t bitstreamSize, uint8_t ledID) {
+
+}
+
+void sendCommand(uint8_t TX_command_array, uint8_t command_length) {
+
+}
+
+void bitsToByteArray(uint8_t bitstream[], uint8_t bitstreamSize) {
+
+    uint8_t index = 0;
+    uint8_t newByte = 0;
+
+    for (uint8_t index = 0; index < bitstreamSize; index++) {
+        newByte = newByte << 1 | bitstream[index];
+        if (index % 7 == 0) {
+            bitstream_byte_array[index / 8] = newByte;
+        }
+    }
+    if (index % 7 != 0) {
+        /* Shift remaining bits to the left */
+        bitstream_byte_array[index / 8] = newByte << (8 - (index % 8));
+    }
+}
+
+void byteArrayToBits(uint8_t byte_array[], uint8_t bitstreamSize) {
     
+    for (uint8_t index = 0; index < bitstreamSize; index++) {
+        
+    }
+    
+
 }
 
 void buildLEDCommand(led_t* ledp) {

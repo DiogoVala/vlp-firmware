@@ -12,7 +12,12 @@
 
 #include "led.h"
 
-void sendBitStream(uint8_t bitstream[], uint8_t bitstreamSize);
+#define COMMAND_LENGTH 7 // Number of command parameters + 1 
+#define BITSTREAM_MAX_BYTES 30 
+#define BITSTREAM_MAX_SIZE 240 /* 30 bytes * 8 bit */
+
+
+void sendBitStream(uint8_t bitstream[], uint8_t bitstreamSize, uint8_t ledID);
 
 void buildLEDCommand(led_t* ledp);
 

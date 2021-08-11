@@ -17,7 +17,7 @@
 #define SPI_SS_DIGPOTSLAVE DDB1
 #define SPI_SS_NRF24L01 DDB2
 #define SPI_MOSI DDB3
-#define SPI_MISO PINB4
+#define SPI_MISO DDB4
 #define SPI_SCK DDB5
 
 #define SPI_CLOCK_DIV4 0x00
@@ -37,7 +37,7 @@
 #define SPI_CLOCK_MASK 0x03  // SPR1 = bit 1, SPR0 = bit 0 on SPCR
 #define SPI_2XCLOCK_MASK 0x01  // SPI2X = bit 0 on SPSR
 
-inline static uint8_t spi_transfer(uint8_t data)
+inline static uint8_t spi_exchange(uint8_t data)
 {
     /* Writting a byte to the data register starts the SPI clock. Bits are sent
      *  to the slave and the SPIF flag is set when the whole byte is shifted. */
@@ -46,7 +46,7 @@ inline static uint8_t spi_transfer(uint8_t data)
 	return SPDR; /* Reading the data register after reading SPIF clears SPIF */
 }
 
-inline static void spi_begin(void)
+inline static void spi_master_init(void)
 {
 	SPCR = _BV(SPE) | 0 | _BV(MSTR) | (SPI_MODE0 & SPI_MODE_MASK) | (SPI_CLOCK_DIV4 & SPI_CLOCK_MASK);
 }
