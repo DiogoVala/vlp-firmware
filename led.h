@@ -31,7 +31,7 @@
 #define LED_MAX_FREQUENCY 37000 /* 37KHz */
 
 /* Modes of operation */
-typedef enum{
+typedef enum {
     LED_MODE_DC,
     LED_MODE_ARBITRARY,
     LED_MODE_VPPM,

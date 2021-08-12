@@ -1,8 +1,11 @@
-/* 
- * File:   timer.h
- * Author: Diogo Vala <your.name at your.org>
+/* timer.h
+ * Forked from Pedro Rodrigues' vlp-setup-firmware
+ * https://github.com/m-rego/vlp-setup-firmware
+ * 
+ * Updated by: Diogo Vala
  *
- * Created on August 3, 2021, 9:00 PM
+ * Description: Handles timer behavior according to
+ * mode of operation of the luminary
  */
 
 #ifndef TIMER_H

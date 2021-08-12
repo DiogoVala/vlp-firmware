@@ -13,7 +13,7 @@
 #include "led.h"
 #include "utils.h"
 
-void initLEDObject(led_t *ledp){
+void initLEDObject(led_t *ledp) {
 
     setLedID(ledp, LED_HW_ID);
     setLedState(ledp, LED_ON);

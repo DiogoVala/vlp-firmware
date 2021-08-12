@@ -12,6 +12,8 @@
       <itemPath>ledInterface.h</itemPath>
       <itemPath>timer.h</itemPath>
       <itemPath>communication.h</itemPath>
+      <itemPath>nrf24l01-mnemonics.h</itemPath>
+      <itemPath>nrf24l01.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -27,6 +29,7 @@
       <itemPath>ledInterface.c</itemPath>
       <itemPath>timer.c</itemPath>
       <itemPath>communication.c</itemPath>
+      <itemPath>nrf24l01.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

@@ -16,10 +16,18 @@
 #include "led.h"
 #include "ledInterface.h"
 #include "utils.h"
+#include "timer.h"
 #include "digPot.h"
 
 const uint32_t DELAY_COUNT = F_CPU / 100; /* 10ms delay */
 
+/* Prototypes of private functions */
+void setLEDIOpins();
+void setLEDPowerSwitchPin(uint8_t ledPower);
+void setLEDStatePin(uint8_t ledState);
+void setHWLEDIntensity(uint8_t ledIntensity);
+
+/* LED setup with default parameters */
 void startupLED(led_t* ledp) {
     setLEDIOpins();
     setLEDPowerSwitchPin(LED_ON);
@@ -33,10 +41,11 @@ void startupLED(led_t* ledp) {
     }
 }
 
-void updateLED(led_t* ledp) {
+/* Hardware update of LED */
+void updateLEDHW(led_t* ledp) {
     setLEDStatePin(ledp->ledState);
     setHWLEDIntensity(ledp->ledIntensity);
-    
+    setupTimer(ledp); /* Changes how the timer behaves, depends on mode*/
 }
 
 void setLEDPowerSwitchPin(uint8_t ledPower) {
@@ -56,7 +65,6 @@ void setLEDStatePin(uint8_t ledState) {
 }
 
 void setHWLEDIntensity(uint8_t ledIntensity) {
-    /* Define a posição do Wiper do Pot de acordo com a intensidade que se quer */
     digitalPotWrite(ledIntensity);
 }
 
