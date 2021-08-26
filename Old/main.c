@@ -90,6 +90,8 @@ int main() {
 
     bool input_type = false; /* false = normal command ; true = bitstream */
 
+    uart_puts("\r\n\nWaiting command input.\r\n");
+
     sei();
 
     while (1) {

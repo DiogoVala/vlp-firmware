@@ -11,6 +11,7 @@
 /* Library Includes */
 #include <avr/interrupt.h>
 #include <string.h>
+#include <stdbool.h>
 
 /* File includes */
 #include "led.h"
@@ -18,6 +19,8 @@
 #include "communication.h"
 #include "timer.h"
 #include "nrf24l01.h"
+
+#define NUM_LUMINARIES 16
 
 uint8_t TX_command_array[COMMAND_LENGTH] = {};
 uint8_t RX_command_array[COMMAND_LENGTH] = {};
@@ -49,10 +52,20 @@ void sendBitStream(uint8_t bitstream[], uint8_t bitstreamSize, led_t* ledp) {
 
 /* Builds and sends command with led params */
 void sendCommand(led_t* ledp) {
+       
     memset(TX_command_array, '\0', sizeof (TX_command_array));
     buildLEDCommand(ledp);
+    if(TX_command_array[ID]==0xFF)
+    {
+        for(uint8_t i = 0; i < NUM_LUMINARIES; i++) /* Depois mudo isto */
+        {
+            TX_command_array[ID]=i;
+            nrf24_send_message(TX_command_array);
+        }
+    }
     nrf24_send_message(TX_command_array);
 }
+
 
 /* Checks the RF module for new data and processes it */
 void checkRF(led_t* ledp) {
@@ -69,7 +82,7 @@ void checkRF(led_t* ledp) {
         RX_command_array[i] = (uint8_t) temp[i];
 
     /* Evaluate data*/
-    if (RX_command_array[ID] == ledp->ledID || RX_command_array[ID] == 0xFF) {
+    if (RX_command_array[ID] == ledp->ledID) {
         if (RX_command_array[IDENTIFIER] != 0xFF) /* Command received */ {
             updateLED(ledp); /* Update LED*/
         }

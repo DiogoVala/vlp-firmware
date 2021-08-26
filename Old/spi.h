@@ -46,6 +46,7 @@ inline static uint8_t spi_exchange(uint8_t data) {
 }
 
 inline static void spi_master_init(void) {
+    DDRB = 0x06;
     SPCR = _BV(SPE) | 0 | _BV(MSTR) | (SPI_MODE0 & SPI_MODE_MASK) | (SPI_CLOCK_DIV4 & SPI_CLOCK_MASK);
 }
 
