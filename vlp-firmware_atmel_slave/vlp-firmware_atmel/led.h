@@ -21,7 +21,7 @@
 #define LED_OFF 0
 
 /* Default values */
-#define LED_DFLT_INTENSITY 10 /* Intensity in percentage (100% = 530mA ) */
+#define LED_DFLT_INTENSITY 100 /* Intensity in percentage (100% = 530mA ) */
 #define LED_DFLT_FREQUENCY 10000 /* Frequency in Hz */
 #define LED_DFLT_DUTYCYCLE 50 /* VPPM dutyCycle in percentage (t_on/T) */
 

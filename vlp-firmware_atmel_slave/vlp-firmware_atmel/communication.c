@@ -25,7 +25,7 @@
 
 uint8_t RX_command_array[COMMAND_LENGTH] = {};
 uint8_t ACK_Array[COMMAND_LENGTH] = {LED_HW_ID, 'A', '\0', '\0', '\0', '\0', '\0'};
-uint8_t bitstream_byte_array[BITSTREAM_MAX_BYTES] = {0};
+uint8_t bitstream_byte_array[COMMAND_LENGTH] = {0};
 uint8_t bitstream[BITSTREAM_MAX_BITS] = {0};
 uint8_t byte_count = 0;
 uint8_t bit_count = 0;
@@ -45,43 +45,48 @@ void checkRF(led_t* ledp) {
 
     nrf24_getData(RX_command_array); /* Store received bytes into temp array */
 	
-	#if 1
-	uint8_t buf[10]={0};
-	uart_puts("\r\n");
-	for (uint8_t i=0; i<COMMAND_LENGTH; i++)
-	{
-		sprintf(buf, "%d, ", RX_command_array[i]);
-		uart_puts(buf);
-	}
-	uart_puts("\r\n");
+	#if DEBUG_COMM 
+		uint8_t buf[50]={0};
+		uart_puts("\r\nReceived data:\r\n");
+		for (uint8_t i=0; i<COMMAND_LENGTH; i++)
+		{
+			sprintf(buf, "%d, ", RX_command_array[i]);
+			uart_puts(buf);
+		}
+		uart_puts("\r\n");
 	#endif
 	
     /* Evaluate data*/
     if (RX_command_array[ID] == ledp->ledID) {
         if (RX_command_array[IDENTIFIER] != 0xFF) /* Command received */ {
             updateLED(ledp); /* Update LED*/
-			uart_puts("\r\nCommand received.");
-        }
-        else /* Bitstream received */ {
-            updateBitstream();
 			
-			#if 0
-			uart_puts("\r\nBitstream received.\r\n");
-			for(uint8_t i=0; i<bit_count; i++)
-			{
-				sprintf(buf, "%d, ", bitstream[i]);
-				uart_puts(buf);
-			}
+			#if DEBUG_COMM 
+				uart_puts("\r\nCommand received.");
 			#endif
         }
+        else /* Bitstream received */ 
+		{
+            updateBitstream();
+		
+			#if DEBUG_COMM 
+				uart_puts("\r\nBitstream received.\r\n");
+				for(uint8_t i=0; i<bit_count; i++)
+				{
+					sprintf(buf, "%d, ", bitstream[i]);
+					uart_puts(buf);
+				}
+			#endif
+        }
+		for(uint16_t i=0; i<ACK_REPLIES; i++)
+		{
+			nrf24_send(ACK_Array);
+			
+			#if DEBUG_COMM 
+			uart_puts("\r\nAck Sent.");
+			#endif
+		}
     }
-	
-	for(uint16_t i=0; i<20; i++)
-	{
-		nrf24_send(ACK_Array);
-	}
-	uart_puts("\r\nAck Sent.");
-
     sei();
 }
 
@@ -107,13 +112,19 @@ void updateLED(led_t* ledp) {
     setLedDutyCycle(ledp, RX_command_array[DUTYCYCLE]);
     updateLEDHW(ledp); /* Changes state pin, digpot position and timer behavior */
 	
-	uint8_t buf[100]={};
-	sprintf(buf, "\r\nState: %d\r\nMode: %d\r\nIntensity: %d\r\nFrequency: %d\r\nDuty: %d", getLedState(ledp), getLedMode(ledp), getLedIntensity(ledp), getLedFrequency(ledp), getLedDutyCycle(ledp));
-	uart_puts(buf);	
+	#if DEBUG_COMM
+		uint8_t buf[100]={};
+		sprintf(buf, "\r\nState: %d\r\nMode: %d\r\nIntensity: %d\r\nFrequency: %d\r\nDuty: %d", getLedState(ledp), getLedMode(ledp), getLedIntensity(ledp), getLedFrequency(ledp), getLedDutyCycle(ledp));
+		uart_puts(buf);
+	#endif
 }
 
 /* Gets the next bit in the bitstream, according to the mode of operation*/
 uint8_t getBit(led_t *ledp) {
+	/* Para implementar PAM, pode-se adaptar esta função para percorrer a 
+	 * bitstream em termos de simbolos, fazer um switch ao simbolo e 
+	 * alterar o valor do Pot. */
+	
     static uint8_t pos = 0;
 
     if (pos >= bit_count)

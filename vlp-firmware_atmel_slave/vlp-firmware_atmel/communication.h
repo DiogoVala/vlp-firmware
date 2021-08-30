@@ -12,9 +12,19 @@
 
 #include "led.h"
 
-#define COMMAND_LENGTH 7
-#define BITSTREAM_MAX_BYTES 7 
-#define BITSTREAM_MAX_BITS 40 /* 5 bytes * 8 bit */
+/* Debug mode */
+#define DEBUG_COMM false 
+
+/* Number of bytes to receive over RF - Must match the Master */
+#define COMMAND_LENGTH 7 
+
+/* Maximum number of bits in the bitstream */
+#define BITSTREAM_MAX_BITS 56 /* COMMAND_LENGTH*8 */
+
+/* Number of ACK to send after receiving a message 
+ * More replies ensures the master receives a response 
+ * but will occupy the slave for a longer period of time */
+#define ACK_REPLIES 20 
 
 /* Byte position of each parameter */
 enum command_params {

@@ -12,9 +12,29 @@
 
 #include "led.h"
 
+/* Debug mode */
+#define DEBUG_COMM true
+
+/* Number of bytes to receive over RF - Must match the Master */
 #define COMMAND_LENGTH 7
-#define BITSTREAM_MAX_BYTES 30 
-#define BITSTREAM_MAX_BITS 240 /* 30 bytes * 8 bit */
+
+/* Maximum number of bits in the bitstream */
+#define BITSTREAM_MAX_BITS 56 /* COMMAND_LENGTH*8 */
+
+/* Number of TX retries if ACK failed */
+#define MAX_TX_RETRIES 10
+
+/* Number of tries to receive ACK */
+#define MAX_ACK_RX_RETRIES 10000
+
+/* Send message to all slaves if ID is: */
+#define BROADCAST 0xFF
+
+/* Identifies that the bytes contain a bitstream */
+#define BITSTREAM_IDENTIFIER 0xFF
+
+/* Maximum number of luminaries */
+#define MAX_LUMINARIES 254
 
 /* Byte position of each parameter */
 enum command_params {

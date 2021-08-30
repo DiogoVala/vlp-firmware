@@ -58,7 +58,8 @@ int main() {
 
     bool input_type = false; /* false = normal command ; true = bitstream */
     uart_puts("\r\n\nWaiting command input.");
-	uart_puts("\r\n($ID,State,Mode,Intensity,Freq,Duty,*)\r\n\n");
+	uart_puts("\r\n($ID,State,Mode,Intensity,Freq,Duty,*)");
+	uart_puts("\r\n($ID,b10101010*)\r\n\n");
 
     sei();
 
