@@ -23,6 +23,7 @@
 #define NUM_LUMINARIES 16
 
 uint8_t TX_command_array[COMMAND_LENGTH] = {};
+uint8_t ACK_Array[COMMAND_LENGTH] = {};
 uint8_t bitstream_byte_array[BITSTREAM_MAX_BYTES] = {0};
 uint8_t bitstream[BITSTREAM_MAX_BITS] = {0};
 uint8_t byte_count = 0;
@@ -51,24 +52,34 @@ void sendBitStream(uint8_t bitstream[], uint8_t bitstreamSize, led_t* ledp) {
 
 /* Builds and sends command with led params */
 void sendCommand(led_t* ledp) {
+	
+	bool ack=false;
+	
 	uart_puts("\r\nSending Command... ");
     buildLEDCommand(ledp);
+
+<<<<<<< HEAD
+	nrf24_send(TX_command_array);
+	while(nrf24_isSending());
+	while(ack==false)
+	{
+		while (nrf24_dataReady() == 0); // Wait for message
+		uart_puts("\r\nReceived Ack.");
+
+		nrf24_getData(ACK_Array); /* Store received bytes into temp array */
+		if(ACK_Array[ID]==TX_command_array[ID] && ACK_Array[IDENTIFIER]=='A')
+			ack=true;
+	}
+
 	#if 0
-    if(TX_command_array[ID]==0xFF)
-    {
-        for(uint8_t i = 0; i < NUM_LUMINARIES; i++) /* Depois mudo isto */
-        {
-            TX_command_array[ID]=i;
-            nrf24_send(TX_command_array);
-        }
-    }
-	#endif
-	
+=======
+>>>>>>> 5b4b8beef78bf4855af77e2ac8468db4e92f7f38
 	for(uint8_t i=0; i<10; i++)
 	{
 		nrf24_send(TX_command_array);
 		while(nrf24_isSending());
 	}
+	#endif
 	uart_puts("Sent!\r\n");
 }
 

@@ -62,7 +62,7 @@ void nrf24_config(uint8_t channel, uint8_t pay_length)
 	nrf24_configRegister(RX_PW_P5, 0x00); // Pipe not used
 	
 	// 1 Mbps, TX gain: 0dbm
-	nrf24_configRegister(RF_SETUP, (0<<RF_DR)|((0x03)<<RF_PWR));
+	nrf24_configRegister(RF_SETUP, (0x01<<RF_DR)|((0x03)<<RF_PWR));
 
 	// CRC enable, 1 byte CRC length
 	nrf24_configRegister(CONFIG,nrf24_CONFIG);
@@ -111,18 +111,17 @@ void nrf24_tx_address(uint8_t* adr)
 /* Returns 1 if data is ready ... */
 uint8_t nrf24_dataReady()
 {
-	// See note in getData() function - just checking RX_DR isn't good enough
-	uint8_t status = nrf24_getStatus();
-	uart_putc(status);
+    // See note in getData() function - just checking RX_DR isn't good enough
+    uint8_t status = nrf24_getStatus();
 
-	// We can short circuit on RX_DR, but if it's not set, we still need
-	// to check the FIFO for any pending packets
-	if ( status & (1 << RX_DR) )
-	{
-		return 1;
-	}
+    // We can short circuit on RX_DR, but if it's not set, we still need
+    // to check the FIFO for any pending packets
+    if ( status & (1 << RX_DR) )
+    {
+	    return 1;
+    }
 
-	return !nrf24_rxFifoEmpty();;
+    return !nrf24_rxFifoEmpty();
 }
 
 /* Checks if receive FIFO is empty or not */
@@ -232,7 +231,6 @@ uint8_t nrf24_getStatus()
 	uint8_t rv;
 	nrf24_csn_digitalWrite(LOW);
 	rv = spi_exchange(NOP);
-	uart_puts("Exchange?");
 	nrf24_csn_digitalWrite(HIGH);
 	return rv;
 }

@@ -24,6 +24,7 @@
 #include "uart.h"
 
 uint8_t RX_command_array[COMMAND_LENGTH] = {};
+uint8_t ACK_Array[COMMAND_LENGTH] = {};
 uint8_t bitstream_byte_array[BITSTREAM_MAX_BYTES] = {0};
 uint8_t bitstream[BITSTREAM_MAX_BITS] = {0};
 uint8_t byte_count = 0;
@@ -40,19 +41,32 @@ void bitsToByteArray(uint8_t bitstream[], uint8_t bitstreamSize);
 void checkRF(led_t* ledp) {
 
     while (nrf24_dataReady() == 0); // Wait for message
-	uart_puts("\r\nData Received.");
     cli();
 
     nrf24_getData(RX_command_array); /* Store received bytes into temp array */
 	
 	uint8_t buf[4]={0};
 	uart_puts("\r\n");
+	uart_puts("\r\nData Received.\r\n");
 	for (uint8_t i=0; i<COMMAND_LENGTH; i++)
 	{
 		sprintf(buf, "%d, ", RX_command_array[i]);
 		uart_puts(buf);
 	}
 	uart_puts("\r\n");
+	
+	uart_puts("\r\nSending Ack");
+	memset(ACK_Array, '\0', COMMAND_LENGTH);
+	ACK_Array[0]=RX_command_array[ID];
+	ACK_Array[1]='A';
+	
+	for(uint16_t i=0; i<65534; i++)
+	{
+		nrf24_send(ACK_Array);
+		uart_puts("\r\nSending Ack... ");
+		while(nrf24_isSending());
+		uart_puts("Sent.");
+	}
 	
     /* Evaluate data*/
     if (RX_command_array[ID] == ledp->ledID) {
