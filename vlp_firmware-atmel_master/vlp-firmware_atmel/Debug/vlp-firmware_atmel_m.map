@@ -29,7 +29,6 @@ Allocating common symbols
 Common symbol       size              file
 
 errno               0x2               c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5/memx-const\libc.a(errno.o)
-led                 0x7               main.o
 payload_len         0x1               nrf24l01.o
 
 Discarded input sections
@@ -403,24 +402,22 @@ END GROUP
                 0x0000000000800100                _edata = .
                 [!provide]                        PROVIDE (__data_end, .)
 
-.bss            0x0000000000800100        0xa
+.bss            0x0000000000800100        0x3
                 [!provide]                        PROVIDE (__bss_start, .)
  *(COMMON)
- COMMON         0x0000000000800100        0x7 main.o
-                0x0000000000800100                led
- COMMON         0x0000000000800107        0x1 nrf24l01.o
-                0x0000000000800107                payload_len
- COMMON         0x0000000000800108        0x2 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5/memx-const\libc.a(errno.o)
-                0x0000000000800108                errno
+ COMMON         0x0000000000800100        0x1 nrf24l01.o
+                0x0000000000800100                payload_len
+ COMMON         0x0000000000800101        0x2 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5/memx-const\libc.a(errno.o)
+                0x0000000000800101                errno
                 [!provide]                        PROVIDE (__bss_end, .)
                 0x00000000000000ce                __data_load_start = LOADADDR (.data)
                 0x00000000000000ce                __data_load_end = (__data_load_start + SIZEOF (.data))
 
-.noinit         0x000000000080010a        0x0
+.noinit         0x0000000000800103        0x0
                 [!provide]                        PROVIDE (__noinit_start, .)
  *(.noinit*)
                 [!provide]                        PROVIDE (__noinit_end, .)
-                0x000000000080010a                _end = .
+                0x0000000000800103                _end = .
 
 .eeprom         0x0000000000810000        0x0
  *(.eeprom*)
@@ -504,32 +501,32 @@ END GROUP
 .debug_pubnames
  *(.debug_pubnames)
 
-.debug_info     0x0000000000000000     0x2fc7
+.debug_info     0x0000000000000000     0x2f93
  *(.debug_info .gnu.linkonce.wi.*)
  .debug_info    0x0000000000000000      0x5f4 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.6.364/xc8/avr/lib/avr5/memx-const/crtatmega328p.o
- .debug_info    0x00000000000005f4      0x7e1 communication.o
- .debug_info    0x0000000000000dd5      0x6f5 led.o
- .debug_info    0x00000000000014ca      0x741 main.o
- .debug_info    0x0000000000001c0b     0x10b1 nrf24l01.o
- .debug_info    0x0000000000002cbc      0x30b uart.o
+ .debug_info    0x00000000000005f4      0x7f5 communication.o
+ .debug_info    0x0000000000000de9      0x6ea led.o
+ .debug_info    0x00000000000014d3      0x71a main.o
+ .debug_info    0x0000000000001bed     0x10a6 nrf24l01.o
+ .debug_info    0x0000000000002c93      0x300 uart.o
 
-.debug_abbrev   0x0000000000000000      0xcb5
+.debug_abbrev   0x0000000000000000      0xca4
  *(.debug_abbrev)
  .debug_abbrev  0x0000000000000000      0x5a2 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.6.364/xc8/avr/lib/avr5/memx-const/crtatmega328p.o
  .debug_abbrev  0x00000000000005a2      0x16c communication.o
  .debug_abbrev  0x000000000000070e      0x119 led.o
- .debug_abbrev  0x0000000000000827      0x142 main.o
- .debug_abbrev  0x0000000000000969      0x272 nrf24l01.o
- .debug_abbrev  0x0000000000000bdb       0xda uart.o
+ .debug_abbrev  0x0000000000000827      0x131 main.o
+ .debug_abbrev  0x0000000000000958      0x272 nrf24l01.o
+ .debug_abbrev  0x0000000000000bca       0xda uart.o
 
-.debug_line     0x0000000000000000      0xe72
+.debug_line     0x0000000000000000      0xe78
  *(.debug_line .debug_line.* .debug_line_end)
  .debug_line    0x0000000000000000      0x137 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.6.364/xc8/avr/lib/avr5/memx-const/crtatmega328p.o
- .debug_line    0x0000000000000137      0x21b communication.o
- .debug_line    0x0000000000000352      0x1b6 led.o
- .debug_line    0x0000000000000508      0x1ff main.o
- .debug_line    0x0000000000000707      0x66d nrf24l01.o
- .debug_line    0x0000000000000d74       0xfe uart.o
+ .debug_line    0x0000000000000137      0x221 communication.o
+ .debug_line    0x0000000000000358      0x1b6 led.o
+ .debug_line    0x000000000000050e      0x1ff main.o
+ .debug_line    0x000000000000070d      0x66d nrf24l01.o
+ .debug_line    0x0000000000000d7a       0xfe uart.o
 
 .debug_frame    0x0000000000000000      0x458
  *(.debug_frame)
@@ -594,322 +591,322 @@ LOAD data_init
                 0x0000000000000000       0x40 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.6.364/xc8/avr/lib/avr5/memx-const/crtatmega328p.o
 
 .bss.byte_count
-                0x0000000000800229        0x1
+                0x0000000000800222        0x1
  .bss.byte_count
-                0x0000000000800229        0x1 communication.o
-                0x0000000000800229                byte_count
+                0x0000000000800222        0x1 communication.o
+                0x0000000000800222                byte_count
 
-.bss.bitstream  0x000000000080010a       0xf0
+.bss.bitstream  0x0000000000800103       0xf0
  .bss.bitstream
-                0x000000000080010a       0xf0 communication.o
-                0x000000000080010a                bitstream
+                0x0000000000800103       0xf0 communication.o
+                0x0000000000800103                bitstream
 
 .bss.bitstream_byte_array
-                0x00000000008001fa       0x1e
+                0x00000000008001f3       0x1e
  .bss.bitstream_byte_array
-                0x00000000008001fa       0x1e communication.o
-                0x00000000008001fa                bitstream_byte_array
+                0x00000000008001f3       0x1e communication.o
+                0x00000000008001f3                bitstream_byte_array
 
 .bss.TX_command_array
-                0x0000000000800222        0x7
+                0x000000000080021b        0x7
  .bss.TX_command_array
-                0x0000000000800222        0x7 communication.o
-                0x0000000000800222                TX_command_array
+                0x000000000080021b        0x7 communication.o
+                0x000000000080021b                TX_command_array
 
-.progmemx.data  0x00000000000000ce       0x60
+.progmemx.data  0x00000000000000ce       0x67
  .progmemx.data
-                0x00000000000000ce       0x60 main.o
+                0x00000000000000ce       0x67 main.o
 
-.progmemx.data  0x000000000000012e       0x44
+.progmemx.data  0x0000000000000135       0x44
  .progmemx.data
-                0x000000000000012e       0x44 nrf24l01.o
+                0x0000000000000135       0x44 nrf24l01.o
 
-.progmemx.data  0x0000000000000172       0x28
+.progmemx.data  0x0000000000000179       0x33
  .progmemx.data
-                0x0000000000000172       0x28 communication.o
+                0x0000000000000179       0x33 communication.o
 
-.text.avrlibc   0x000000000000019a      0x2dc
- .text.avrlibc  0x000000000000019a      0x2dc c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5/memx-const\libc.a(strtol.o)
-                0x000000000000019a                strtol
+.text.avrlibc   0x00000000000001ac      0x2dc
+ .text.avrlibc  0x00000000000001ac      0x2dc c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5/memx-const\libc.a(strtol.o)
+                0x00000000000001ac                strtol
 
-.text.main      0x0000000000000476      0x1c6
- .text.main     0x0000000000000476      0x1c6 main.o
-                0x0000000000000476                main
+.text.main      0x0000000000000488      0x1c8
+ .text.main     0x0000000000000488      0x1c8 main.o
+                0x0000000000000488                main
 
 .text.bitsToByteArray
-                0x000000000000063c       0xb0
+                0x0000000000000650       0xb0
  .text.bitsToByteArray
-                0x000000000000063c       0xb0 communication.o
-                0x000000000000063c                bitsToByteArray
+                0x0000000000000650       0xb0 communication.o
+                0x0000000000000650                bitsToByteArray
 
 .text.nrf24_config
-                0x00000000000006ec       0x8c
+                0x0000000000000700       0x8c
  .text.nrf24_config
-                0x00000000000006ec       0x8c nrf24l01.o
-                0x00000000000006ec                nrf24_config
+                0x0000000000000700       0x8c nrf24l01.o
+                0x0000000000000700                nrf24_config
 
 .text.sendBitStream
-                0x0000000000000778       0x82
+                0x000000000000078c       0x82
  .text.sendBitStream
-                0x0000000000000778       0x82 communication.o
-                0x0000000000000778                sendBitStream
+                0x000000000000078c       0x82 communication.o
+                0x000000000000078c                sendBitStream
 
 .text.buildLEDCommand
-                0x00000000000007fa       0x5a
+                0x000000000000080e       0x5a
  .text.buildLEDCommand
-                0x00000000000007fa       0x5a communication.o
-                0x00000000000007fa                buildLEDCommand
+                0x000000000000080e       0x5a communication.o
+                0x000000000000080e                buildLEDCommand
 
 .text.nrf24_send
-                0x0000000000000854       0x5a
+                0x0000000000000868       0x5a
  .text.nrf24_send
-                0x0000000000000854       0x5a nrf24l01.o
-                0x0000000000000854                nrf24_send
+                0x0000000000000868       0x5a nrf24l01.o
+                0x0000000000000868                nrf24_send
 
 .text.libgcc.div
-                0x00000000000008ae       0x44
+                0x00000000000008c2       0x44
  .text.libgcc.div
-                0x00000000000008ae       0x44 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/avr5/memx-const\libgcc.a(_udivmodsi4.o)
-                0x00000000000008ae                __udivmodsi4
-
-.text.nrf24_writeRegister
-                0x00000000000008f2       0x3c
- .text.nrf24_writeRegister
-                0x00000000000008f2       0x3c nrf24l01.o
-                0x00000000000008f2                nrf24_writeRegister
-
-.text.nrf24_powerUpRx
-                0x000000000000092e       0x38
- .text.nrf24_powerUpRx
-                0x000000000000092e       0x38 nrf24l01.o
-                0x000000000000092e                nrf24_powerUpRx
-
-.text.nrf24_init
-                0x0000000000000966       0x38
- .text.nrf24_init
-                0x0000000000000966       0x38 nrf24l01.o
-                0x0000000000000966                nrf24_init
+                0x00000000000008c2       0x44 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/avr5/memx-const\libgcc.a(_udivmodsi4.o)
+                0x00000000000008c2                __udivmodsi4
 
 .text.sendCommand
-                0x000000000000099e       0x36
+                0x0000000000000906       0x40
  .text.sendCommand
-                0x000000000000099e       0x36 communication.o
-                0x000000000000099e                sendCommand
+                0x0000000000000906       0x40 communication.o
+                0x0000000000000906                sendCommand
+
+.text.nrf24_writeRegister
+                0x0000000000000946       0x3c
+ .text.nrf24_writeRegister
+                0x0000000000000946       0x3c nrf24l01.o
+                0x0000000000000946                nrf24_writeRegister
+
+.text.nrf24_powerUpRx
+                0x0000000000000982       0x38
+ .text.nrf24_powerUpRx
+                0x0000000000000982       0x38 nrf24l01.o
+                0x0000000000000982                nrf24_powerUpRx
+
+.text.nrf24_init
+                0x00000000000009ba       0x38
+ .text.nrf24_init
+                0x00000000000009ba       0x38 nrf24l01.o
+                0x00000000000009ba                nrf24_init
 
 .text.nrf24_configRegister
-                0x00000000000009d4       0x36
+                0x00000000000009f2       0x36
  .text.nrf24_configRegister
-                0x00000000000009d4       0x36 nrf24l01.o
-                0x00000000000009d4                nrf24_configRegister
+                0x00000000000009f2       0x36 nrf24l01.o
+                0x00000000000009f2                nrf24_configRegister
 
 .text.uart_puts
-                0x0000000000000a0a       0x2c
+                0x0000000000000a28       0x2c
  .text.uart_puts
-                0x0000000000000a0a       0x2c uart.o
-                0x0000000000000a0a                uart_puts
+                0x0000000000000a28       0x2c uart.o
+                0x0000000000000a28                uart_puts
 
 .text.nrf24_transmitSync
-                0x0000000000000a36       0x22
+                0x0000000000000a54       0x22
  .text.nrf24_transmitSync
-                0x0000000000000a36       0x22 nrf24l01.o
-                0x0000000000000a36                nrf24_transmitSync
+                0x0000000000000a54       0x22 nrf24l01.o
+                0x0000000000000a54                nrf24_transmitSync
 
 .text.nrf24_getStatus
-                0x0000000000000a58       0x22
+                0x0000000000000a76       0x22
  .text.nrf24_getStatus
-                0x0000000000000a58       0x22 nrf24l01.o
-                0x0000000000000a58                nrf24_getStatus
+                0x0000000000000a76       0x22 nrf24l01.o
+                0x0000000000000a76                nrf24_getStatus
 
 .text.nrf24_rx_address
-                0x0000000000000a7a       0x22
+                0x0000000000000a98       0x22
  .text.nrf24_rx_address
-                0x0000000000000a7a       0x22 nrf24l01.o
-                0x0000000000000a7a                nrf24_rx_address
+                0x0000000000000a98       0x22 nrf24l01.o
+                0x0000000000000a98                nrf24_rx_address
 
 .text.nrf24_tx_address
-                0x0000000000000a9c       0x20
+                0x0000000000000aba       0x20
  .text.nrf24_tx_address
-                0x0000000000000a9c       0x20 nrf24l01.o
-                0x0000000000000a9c                nrf24_tx_address
+                0x0000000000000aba       0x20 nrf24l01.o
+                0x0000000000000aba                nrf24_tx_address
 
 .text.libgcc.mul
-                0x0000000000000abc       0x20
+                0x0000000000000ada       0x20
  .text.libgcc.mul
-                0x0000000000000abc       0x20 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/avr5/memx-const\libgcc.a(_mulsi3.o)
-                0x0000000000000abc                __mulsi3
+                0x0000000000000ada       0x20 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/avr5/memx-const\libgcc.a(_mulsi3.o)
+                0x0000000000000ada                __mulsi3
 
 .text.libgcc.mul
-                0x0000000000000adc       0x1e
+                0x0000000000000afa       0x1e
  .text.libgcc.mul
-                0x0000000000000adc       0x1e c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/avr5/memx-const\libgcc.a(_umulhisi3.o)
-                0x0000000000000adc                __umulhisi3
+                0x0000000000000afa       0x1e c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/avr5/memx-const\libgcc.a(_umulhisi3.o)
+                0x0000000000000afa                __umulhisi3
 
 .text.uart_init
-                0x0000000000000afa       0x18
+                0x0000000000000b18       0x18
  .text.uart_init
-                0x0000000000000afa       0x18 uart.o
-                0x0000000000000afa                uart_init
+                0x0000000000000b18       0x18 uart.o
+                0x0000000000000b18                uart_init
 
 .text.libgcc.mul
-                0x0000000000000b12       0x16
+                0x0000000000000b30       0x16
  .text.libgcc.mul
-                0x0000000000000b12       0x16 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/avr5/memx-const\libgcc.a(_muluhisi3.o)
-                0x0000000000000b12                __muluhisi3
+                0x0000000000000b30       0x16 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/avr5/memx-const\libgcc.a(_muluhisi3.o)
+                0x0000000000000b30                __muluhisi3
 
 .text.nrf24_ce_digitalWrite
-                0x0000000000000b28       0x14
+                0x0000000000000b46       0x14
  .text.nrf24_ce_digitalWrite
-                0x0000000000000b28       0x14 nrf24l01.o
-                0x0000000000000b28                nrf24_ce_digitalWrite
+                0x0000000000000b46       0x14 nrf24l01.o
+                0x0000000000000b46                nrf24_ce_digitalWrite
 
 .text.nrf24_csn_digitalWrite
-                0x0000000000000b3c       0x14
+                0x0000000000000b5a       0x14
  .text.nrf24_csn_digitalWrite
-                0x0000000000000b3c       0x14 nrf24l01.o
-                0x0000000000000b3c                nrf24_csn_digitalWrite
+                0x0000000000000b5a       0x14 nrf24l01.o
+                0x0000000000000b5a                nrf24_csn_digitalWrite
 
 .text.nrf24_powerUpTx
-                0x0000000000000b50       0x12
+                0x0000000000000b6e       0x12
  .text.nrf24_powerUpTx
-                0x0000000000000b50       0x12 nrf24l01.o
-                0x0000000000000b50                nrf24_powerUpTx
+                0x0000000000000b6e       0x12 nrf24l01.o
+                0x0000000000000b6e                nrf24_powerUpTx
 
-.text.avrlibc   0x0000000000000b62       0x12
- .text.avrlibc  0x0000000000000b62       0x12 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5/memx-const\libc.a(isspace.o)
-                0x0000000000000b62                isspace
+.text.avrlibc   0x0000000000000b80       0x12
+ .text.avrlibc  0x0000000000000b80       0x12 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5/memx-const\libc.a(isspace.o)
+                0x0000000000000b80                isspace
 
 .text.nrf24_isSending
-                0x0000000000000b74       0x10
+                0x0000000000000b92       0x10
  .text.nrf24_isSending
-                0x0000000000000b74       0x10 nrf24l01.o
-                0x0000000000000b74                nrf24_isSending
+                0x0000000000000b92       0x10 nrf24l01.o
+                0x0000000000000b92                nrf24_isSending
 
 .text.uart_putc
-                0x0000000000000b84        0xe
+                0x0000000000000ba2        0xe
  .text.uart_putc
-                0x0000000000000b84        0xe uart.o
-                0x0000000000000b84                uart_putc
+                0x0000000000000ba2        0xe uart.o
+                0x0000000000000ba2                uart_putc
 
 .text.uart_getc
-                0x0000000000000b92        0xe
+                0x0000000000000bb0        0xe
  .text.uart_getc
-                0x0000000000000b92        0xe uart.o
-                0x0000000000000b92                uart_getc
+                0x0000000000000bb0        0xe uart.o
+                0x0000000000000bb0                uart_getc
 
-.text.avrlibc   0x0000000000000ba0        0xe
- .text.avrlibc  0x0000000000000ba0        0xe c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5/memx-const\libc.a(atol_M.o)
-                0x0000000000000ba0                atol
+.text.avrlibc   0x0000000000000bbe        0xe
+ .text.avrlibc  0x0000000000000bbe        0xe c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5/memx-const\libc.a(atol_M.o)
+                0x0000000000000bbe                atol
 
 .text.getLedFrequency
-                0x0000000000000bae        0x8
+                0x0000000000000bcc        0x8
  .text.getLedFrequency
-                0x0000000000000bae        0x8 led.o
-                0x0000000000000bae                getLedFrequency
+                0x0000000000000bcc        0x8 led.o
+                0x0000000000000bcc                getLedFrequency
 
 .text.setLedFrequency
-                0x0000000000000bb6        0x8
+                0x0000000000000bd4        0x8
  .text.setLedFrequency
-                0x0000000000000bb6        0x8 led.o
-                0x0000000000000bb6                setLedFrequency
+                0x0000000000000bd4        0x8 led.o
+                0x0000000000000bd4                setLedFrequency
 
-.text.avrlibc   0x0000000000000bbe        0x8
- .text.avrlibc  0x0000000000000bbe        0x8 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5/memx-const\libc.a(atoi_M.o)
-                0x0000000000000bbe                atoi
+.text.avrlibc   0x0000000000000bdc        0x8
+ .text.avrlibc  0x0000000000000bdc        0x8 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5/memx-const\libc.a(atoi_M.o)
+                0x0000000000000bdc                atoi
 
-.text.getLedID  0x0000000000000bc6        0x6
+.text.getLedID  0x0000000000000be4        0x6
  .text.getLedID
-                0x0000000000000bc6        0x6 led.o
-                0x0000000000000bc6                getLedID
+                0x0000000000000be4        0x6 led.o
+                0x0000000000000be4                getLedID
 
-.text.setLedID  0x0000000000000bcc        0x6
+.text.setLedID  0x0000000000000bea        0x6
  .text.setLedID
-                0x0000000000000bcc        0x6 led.o
-                0x0000000000000bcc                setLedID
+                0x0000000000000bea        0x6 led.o
+                0x0000000000000bea                setLedID
 
 .text.getLedState
-                0x0000000000000bd2        0x6
+                0x0000000000000bf0        0x6
  .text.getLedState
-                0x0000000000000bd2        0x6 led.o
-                0x0000000000000bd2                getLedState
+                0x0000000000000bf0        0x6 led.o
+                0x0000000000000bf0                getLedState
 
 .text.setLedState
-                0x0000000000000bd8        0x6
+                0x0000000000000bf6        0x6
  .text.setLedState
-                0x0000000000000bd8        0x6 led.o
-                0x0000000000000bd8                setLedState
+                0x0000000000000bf6        0x6 led.o
+                0x0000000000000bf6                setLedState
 
 .text.getLedMode
-                0x0000000000000bde        0x6
+                0x0000000000000bfc        0x6
  .text.getLedMode
-                0x0000000000000bde        0x6 led.o
-                0x0000000000000bde                getLedMode
+                0x0000000000000bfc        0x6 led.o
+                0x0000000000000bfc                getLedMode
 
 .text.setLedMode
-                0x0000000000000be4        0x6
+                0x0000000000000c02        0x6
  .text.setLedMode
-                0x0000000000000be4        0x6 led.o
-                0x0000000000000be4                setLedMode
+                0x0000000000000c02        0x6 led.o
+                0x0000000000000c02                setLedMode
 
 .text.getLedIntensity
-                0x0000000000000bea        0x6
+                0x0000000000000c08        0x6
  .text.getLedIntensity
-                0x0000000000000bea        0x6 led.o
-                0x0000000000000bea                getLedIntensity
+                0x0000000000000c08        0x6 led.o
+                0x0000000000000c08                getLedIntensity
 
 .text.setLedIntensity
-                0x0000000000000bf0        0x6
+                0x0000000000000c0e        0x6
  .text.setLedIntensity
-                0x0000000000000bf0        0x6 led.o
-                0x0000000000000bf0                setLedIntensity
+                0x0000000000000c0e        0x6 led.o
+                0x0000000000000c0e                setLedIntensity
 
 .text.getLedDutyCycle
-                0x0000000000000bf6        0x6
+                0x0000000000000c14        0x6
  .text.getLedDutyCycle
-                0x0000000000000bf6        0x6 led.o
-                0x0000000000000bf6                getLedDutyCycle
+                0x0000000000000c14        0x6 led.o
+                0x0000000000000c14                getLedDutyCycle
 
 .text.setLedDutyCycle
-                0x0000000000000bfc        0x6
+                0x0000000000000c1a        0x6
  .text.setLedDutyCycle
-                0x0000000000000bfc        0x6 led.o
-                0x0000000000000bfc                setLedDutyCycle
+                0x0000000000000c1a        0x6 led.o
+                0x0000000000000c1a                setLedDutyCycle
 
-.text.avrlibc   0x0000000000000c02        0x6
- .text.avrlibc  0x0000000000000c02        0x6 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5/memx-const\libc.a(cty_isfalse.o)
-                0x0000000000000c02                __ctype_isfalse
-                0x0000000000000c06                __ctype_istrue
+.text.avrlibc   0x0000000000000c20        0x6
+ .text.avrlibc  0x0000000000000c20        0x6 c:/program files/microchip/xc8/v2.31/avr/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5/memx-const\libc.a(cty_isfalse.o)
+                0x0000000000000c20                __ctype_isfalse
+                0x0000000000000c24                __ctype_istrue
 
-.text           0x0000000000000c08        0x4
- .text          0x0000000000000c08        0x4 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.6.364/xc8/avr/lib/avr5/memx-const/crtatmega328p.o
-                0x0000000000000c08                __vector_22
-                0x0000000000000c08                __vector_1
-                0x0000000000000c08                __vector_24
-                0x0000000000000c08                __vector_12
-                0x0000000000000c08                __bad_interrupt
-                0x0000000000000c08                __vector_6
-                0x0000000000000c08                __vector_3
-                0x0000000000000c08                __vector_23
-                0x0000000000000c08                __vector_25
-                0x0000000000000c08                __vector_11
-                0x0000000000000c08                __vector_13
-                0x0000000000000c08                __vector_17
-                0x0000000000000c08                __vector_19
-                0x0000000000000c08                __vector_7
-                0x0000000000000c08                __vector_5
-                0x0000000000000c08                __vector_4
-                0x0000000000000c08                __vector_9
-                0x0000000000000c08                __vector_2
-                0x0000000000000c08                __vector_21
-                0x0000000000000c08                __vector_15
-                0x0000000000000c08                __vector_8
-                0x0000000000000c08                __vector_14
-                0x0000000000000c08                __vector_10
-                0x0000000000000c08                __vector_16
-                0x0000000000000c08                __vector_18
-                0x0000000000000c08                __vector_20
+.text           0x0000000000000c26        0x4
+ .text          0x0000000000000c26        0x4 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.6.364/xc8/avr/lib/avr5/memx-const/crtatmega328p.o
+                0x0000000000000c26                __vector_22
+                0x0000000000000c26                __vector_1
+                0x0000000000000c26                __vector_24
+                0x0000000000000c26                __vector_12
+                0x0000000000000c26                __bad_interrupt
+                0x0000000000000c26                __vector_6
+                0x0000000000000c26                __vector_3
+                0x0000000000000c26                __vector_23
+                0x0000000000000c26                __vector_25
+                0x0000000000000c26                __vector_11
+                0x0000000000000c26                __vector_13
+                0x0000000000000c26                __vector_17
+                0x0000000000000c26                __vector_19
+                0x0000000000000c26                __vector_7
+                0x0000000000000c26                __vector_5
+                0x0000000000000c26                __vector_4
+                0x0000000000000c26                __vector_9
+                0x0000000000000c26                __vector_2
+                0x0000000000000c26                __vector_21
+                0x0000000000000c26                __vector_15
+                0x0000000000000c26                __vector_8
+                0x0000000000000c26                __vector_14
+                0x0000000000000c26                __vector_10
+                0x0000000000000c26                __vector_16
+                0x0000000000000c26                __vector_18
+                0x0000000000000c26                __vector_20
 
 .data.nrf24_addr
-                0x0000000000800218        0xa load address 0x0000000000000c0c
+                0x0000000000800211        0xa load address 0x0000000000000c2a
  .data.nrf24_addr
-                0x0000000000800218        0xa nrf24l01.o
-                0x0000000000800218                nrf24_addr
+                0x0000000000800211        0xa nrf24l01.o
+                0x0000000000800211                nrf24_addr

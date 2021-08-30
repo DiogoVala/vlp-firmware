@@ -53,17 +53,7 @@ void sendBitStream(uint8_t bitstream[], uint8_t bitstreamSize, led_t* ledp) {
 void sendCommand(led_t* ledp) {
 	uart_puts("\r\nSending Command... ");
     buildLEDCommand(ledp);
-	#if 0
-    if(TX_command_array[ID]==0xFF)
-    {
-        for(uint8_t i = 0; i < NUM_LUMINARIES; i++) /* Depois mudo isto */
-        {
-            TX_command_array[ID]=i;
-            nrf24_send(TX_command_array);
-        }
-    }
-	#endif
-	
+
 	for(uint8_t i=0; i<10; i++)
 	{
 		nrf24_send(TX_command_array);

@@ -93,9 +93,9 @@ nrf24l01.d \
 timer.d \
 uart.d
 
-OUTPUT_FILE_PATH +=vlp-firmware_atmel.elf
+OUTPUT_FILE_PATH +=vlp-firmware_atmel_s.elf
 
-OUTPUT_FILE_PATH_AS_ARGS +=vlp-firmware_atmel.elf
+OUTPUT_FILE_PATH_AS_ARGS +=vlp-firmware_atmel_s.elf
 
 ADDITIONAL_DEPENDENCIES:=
 
@@ -189,11 +189,11 @@ all: $(OUTPUT_FILE_PATH) $(ADDITIONAL_DEPENDENCIES)
 $(OUTPUT_FILE_PATH): $(OBJS) $(USER_OBJS) $(OUTPUT_FILE_DEP) $(LIB_DEP) $(LINKER_SCRIPT_DEP)
 	@echo Building target: $@
 	@echo Invoking:  XC8 C Linker : 2.31
-	$(QUOTE)C:\Program Files\Microchip\xc8\v2.31\bin\xc8-cc.exe$(QUOTE) -o$(OUTPUT_FILE_PATH_AS_ARGS) $(OBJS_AS_ARGS) $(USER_OBJS) $(LIBS) -mcpu=ATmega328P  -mdfp="C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\xc8"  -Wl,-Map="vlp-firmware_atmel.map" -funsigned-char -funsigned-bitfields -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums --memorysummary,memoryfile.xml  
+	$(QUOTE)C:\Program Files\Microchip\xc8\v2.31\bin\xc8-cc.exe$(QUOTE) -o$(OUTPUT_FILE_PATH_AS_ARGS) $(OBJS_AS_ARGS) $(USER_OBJS) $(LIBS) -mcpu=ATmega328P  -mdfp="C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\xc8"  -Wl,-Map="vlp-firmware_atmel_s.map" -funsigned-char -funsigned-bitfields -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums --memorysummary,memoryfile.xml  
 	@echo Finished building target: $@
-	"C:\Program Files\Microchip\xc8\v2.31\bin\avr-objcopy.exe" -O ihex -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures  "vlp-firmware_atmel.elf" "vlp-firmware_atmel.hex"
-	"C:\Program Files\Microchip\xc8\v2.31\bin\avr-objcopy.exe" -j .eeprom --set-section-flags=.eeprom=alloc,load --change-section-lma .eeprom=0 --no-change-warnings -O ihex "vlp-firmware_atmel.elf" "vlp-firmware_atmel.eep" || exit 0
-	"C:\Program Files\Microchip\xc8\v2.31\bin\avr-objdump.exe" -h -S "vlp-firmware_atmel.elf" > "vlp-firmware_atmel.lss"
+	"C:\Program Files\Microchip\xc8\v2.31\bin\avr-objcopy.exe" -O ihex -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures  "vlp-firmware_atmel_s.elf" "vlp-firmware_atmel_s.hex"
+	"C:\Program Files\Microchip\xc8\v2.31\bin\avr-objcopy.exe" -j .eeprom --set-section-flags=.eeprom=alloc,load --change-section-lma .eeprom=0 --no-change-warnings -O ihex "vlp-firmware_atmel_s.elf" "vlp-firmware_atmel_s.eep" || exit 0
+	"C:\Program Files\Microchip\xc8\v2.31\bin\avr-objdump.exe" -h -S "vlp-firmware_atmel_s.elf" > "vlp-firmware_atmel_s.lss"
 	
 	
 
@@ -205,5 +205,5 @@ $(OUTPUT_FILE_PATH): $(OBJS) $(USER_OBJS) $(OUTPUT_FILE_DEP) $(LIB_DEP) $(LINKER
 clean:
 	-$(RM) $(OBJS_AS_ARGS) $(EXECUTABLES)  
 	-$(RM) $(C_DEPS_AS_ARGS)   
-	rm -rf "vlp-firmware_atmel.elf" "vlp-firmware_atmel.hex" "vlp-firmware_atmel.eep" "vlp-firmware_atmel.map" "vlp-firmware_atmel.usersignatures" "vlp-firmware_atmel.a"  "vlp-firmware_atmel.lss"
+	rm -rf "vlp-firmware_atmel_s.elf" "vlp-firmware_atmel_s.hex" "vlp-firmware_atmel_s.eep" "vlp-firmware_atmel_s.map" "vlp-firmware_atmel_s.usersignatures" "vlp-firmware_atmel_s.a"  "vlp-firmware_atmel_s.lss"
 	

@@ -11,7 +11,7 @@ timer.d timer.o: .././timer.c \
  c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\fuse.h \
  c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\lock.h \
  c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\interrupt.h \
- .././timer.h .././led.h .././utils.h
+ .././timer.h .././led.h .././config.h
 
 c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\io.h:
 
@@ -41,4 +41,4 @@ c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\interrupt.h:
 
 .././led.h:
 
-.././utils.h:
+.././config.h:
