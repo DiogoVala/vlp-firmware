@@ -1,4 +1,4 @@
-nrf24l01.d nrf24l01.o: .././nrf24l01.c \
+nrf24l01.d nrf24l01.o: .././nrf24l01.c .././nrf24l01.h .././SPI.h \
  c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\io.h \
  c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\sfr_defs.h \
  c:\program\ files\microchip\xc8\v2.31\avr\avr\include\inttypes.h \
@@ -10,16 +10,12 @@ nrf24l01.d nrf24l01.o: .././nrf24l01.c \
  c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\version.h \
  c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\fuse.h \
  c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\lock.h \
- c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\interrupt.h \
- c:\program\ files\microchip\xc8\v2.31\avr\avr\include\util\delay.h \
- c:\program\ files\microchip\xc8\v2.31\avr\avr\include\util\delay_basic.h \
- c:\program\ files\microchip\xc8\v2.31\avr\avr\include\math.h \
- c:\program\ files\microchip\xc8\v2.31\avr\avr\include\stdio.h \
- c:\program\ files\microchip\xc8\v2.31\avr\lib\gcc\avr\5.4.0\include\stdarg.h \
- c:\program\ files\microchip\xc8\v2.31\avr\lib\gcc\avr\5.4.0\include\stddef.h \
- c:\program\ files\microchip\xc8\v2.31\avr\lib\gcc\avr\5.4.0\include\stdbool.h \
- c:\program\ files\microchip\xc8\v2.31\avr\avr\include\string.h \
- .././nrf24l01.h .././nrf24l01-mnemonics.h .././spi.h
+ .././nRF24L01.h .././nrf24l01_config.h .././spi.h .././config.h \
+ .././uart.h
+
+.././nrf24l01.h:
+
+.././SPI.h:
 
 c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\io.h:
 
@@ -43,26 +39,12 @@ c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\fuse.h:
 
 c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\lock.h:
 
-c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\interrupt.h:
+.././nRF24L01.h:
 
-c:\program\ files\microchip\xc8\v2.31\avr\avr\include\util\delay.h:
-
-c:\program\ files\microchip\xc8\v2.31\avr\avr\include\util\delay_basic.h:
-
-c:\program\ files\microchip\xc8\v2.31\avr\avr\include\math.h:
-
-c:\program\ files\microchip\xc8\v2.31\avr\avr\include\stdio.h:
-
-c:\program\ files\microchip\xc8\v2.31\avr\lib\gcc\avr\5.4.0\include\stdarg.h:
-
-c:\program\ files\microchip\xc8\v2.31\avr\lib\gcc\avr\5.4.0\include\stddef.h:
-
-c:\program\ files\microchip\xc8\v2.31\avr\lib\gcc\avr\5.4.0\include\stdbool.h:
-
-c:\program\ files\microchip\xc8\v2.31\avr\avr\include\string.h:
-
-.././nrf24l01.h:
-
-.././nrf24l01-mnemonics.h:
+.././nrf24l01_config.h:
 
 .././spi.h:
+
+.././config.h:
+
+.././uart.h:

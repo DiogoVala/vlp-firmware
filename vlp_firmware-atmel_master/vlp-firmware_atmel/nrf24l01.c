@@ -62,7 +62,7 @@ void nrf24_config(uint8_t channel, uint8_t pay_length)
     nrf24_configRegister(RX_PW_P5, 0x00); // Pipe not used 
 	
     // 1 Mbps, TX gain: 0dbm
-    nrf24_configRegister(RF_SETUP, (0<<RF_DR)|((0x03)<<RF_PWR));
+    nrf24_configRegister(RF_SETUP, (0x01<<RF_DR)|((0x03)<<RF_PWR));
 
     // CRC enable, 1 byte CRC length
     nrf24_configRegister(CONFIG,nrf24_CONFIG);
@@ -121,7 +121,7 @@ uint8_t nrf24_dataReady()
         return 1;
     }
 
-    return !nrf24_rxFifoEmpty();;
+    return !nrf24_rxFifoEmpty();
 }
 
 /* Checks if receive FIFO is empty or not */
@@ -300,13 +300,9 @@ void nrf24_transferSync(uint8_t* dataout,uint8_t* datain,uint8_t len)
 /* send multiple bytes over SPI */
 void nrf24_transmitSync(uint8_t* dataout,uint8_t len)
 {
-	uint8_t buf[2];
-	uart_puts("\r\n");
     for(uint8_t i=0; i<len ;i++)
     {
         spi_exchange(dataout[i]);
-		sprintf(buf, "%d, ", dataout[i]);
-		uart_puts(buf);
     }
 
 }

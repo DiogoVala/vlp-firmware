@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?> 
 <project>                                  
-  <executable name="vlp-firmware_atmel.elf">                 
+  <executable name="vlp-firmware_atmel_s.elf">                 
     <memory name="program">              
       <units>bytes</units>                 
       <length>32768</length>                 
-      <used>5709</used>                     
-      <free>27059</free>                     
+      <used>5814</used>                     
+      <free>26954</free>                     
     </memory>                              
     <memory name="data">                 
       <units>bytes</units>                 
       <length>2048</length>                 
-      <used>408</used>                     
-      <free>1640</free>                     
+      <used>90</used>                     
+      <free>1958</free>                     
     </memory>                              
   </executable>                            
 </project>                                 

@@ -31,9 +31,11 @@
 
 extern uint8_t bitstream[BITSTREAM_MAX_BITS];
 
-led_t led; /* LED object */
+
 
 int main() {
+	
+	led_t led; /* LED object */
 
     /* Initialize common modules */
     uart_init();
