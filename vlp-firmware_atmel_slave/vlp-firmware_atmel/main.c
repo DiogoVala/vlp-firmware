@@ -30,7 +30,7 @@
 extern uint8_t bitstream[BITSTREAM_MAX_BITS];
 extern uint16_t * compB[2];
 
-led_t led; /* LED object */
+volatile led_t led; /* LED object */
 
 /* Em OOK+Manchester, só a ISR COMPA é utilizada para definir os periodos
  * de cada bit. Em VPPM, esta também altera o valor do OCR1B conforme o duty cycle
@@ -60,7 +60,7 @@ ISR(TIMER1_COMPB_vect) // Timer1 ISR COMPB
 }
 
 int main() {
-
+	
     /* Initialize common modules */
 	uart_init();
 	uart_puts("\n\x1b[2J\r"); //Clear screen
@@ -74,7 +74,7 @@ int main() {
 	startupLED(&led);
 			
 	while (1) {
-		checkRF(); /* Checks for incoming messages and updates LED */
+		checkRF(&led); /* Checks for incoming messages and updates LED */
 	}
 
 	return(EXIT_SUCCESS);

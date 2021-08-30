@@ -24,7 +24,7 @@
 #include "uart.h"
 
 uint8_t RX_command_array[COMMAND_LENGTH] = {};
-uint8_t ACK_Array[COMMAND_LENGTH] = {};
+uint8_t ACK_Array[COMMAND_LENGTH] = {LED_HW_ID, 'A', '\0', '\0', '\0', '\0', '\0'};
 uint8_t bitstream_byte_array[BITSTREAM_MAX_BYTES] = {0};
 uint8_t bitstream[BITSTREAM_MAX_BITS] = {0};
 uint8_t byte_count = 0;
@@ -45,28 +45,16 @@ void checkRF(led_t* ledp) {
 
     nrf24_getData(RX_command_array); /* Store received bytes into temp array */
 	
-	uint8_t buf[4]={0};
+	#if 1
+	uint8_t buf[10]={0};
 	uart_puts("\r\n");
-	uart_puts("\r\nData Received.\r\n");
 	for (uint8_t i=0; i<COMMAND_LENGTH; i++)
 	{
 		sprintf(buf, "%d, ", RX_command_array[i]);
 		uart_puts(buf);
 	}
 	uart_puts("\r\n");
-	
-	uart_puts("\r\nSending Ack");
-	memset(ACK_Array, '\0', COMMAND_LENGTH);
-	ACK_Array[0]=RX_command_array[ID];
-	ACK_Array[1]='A';
-	
-	for(uint16_t i=0; i<65534; i++)
-	{
-		nrf24_send(ACK_Array);
-		uart_puts("\r\nSending Ack... ");
-		while(nrf24_isSending());
-		uart_puts("Sent.");
-	}
+	#endif
 	
     /* Evaluate data*/
     if (RX_command_array[ID] == ledp->ledID) {
@@ -76,14 +64,24 @@ void checkRF(led_t* ledp) {
         }
         else /* Bitstream received */ {
             updateBitstream();
+			
+			#if 0
 			uart_puts("\r\nBitstream received.\r\n");
 			for(uint8_t i=0; i<bit_count; i++)
 			{
 				sprintf(buf, "%d, ", bitstream[i]);
 				uart_puts(buf);
 			}
+			#endif
         }
     }
+	
+	for(uint16_t i=0; i<20; i++)
+	{
+		nrf24_send(ACK_Array);
+	}
+	uart_puts("\r\nAck Sent.");
+
     sei();
 }
 
@@ -108,6 +106,10 @@ void updateLED(led_t* ledp) {
     setLedFrequency(ledp, ((RX_command_array[FREQUENCY_HB] << 8) | RX_command_array[FREQUENCY_LB]));
     setLedDutyCycle(ledp, RX_command_array[DUTYCYCLE]);
     updateLEDHW(ledp); /* Changes state pin, digpot position and timer behavior */
+	
+	uint8_t buf[100]={};
+	sprintf(buf, "\r\nState: %d\r\nMode: %d\r\nIntensity: %d\r\nFrequency: %d\r\nDuty: %d", getLedState(ledp), getLedMode(ledp), getLedIntensity(ledp), getLedFrequency(ledp), getLedDutyCycle(ledp));
+	uart_puts(buf);	
 }
 
 /* Gets the next bit in the bitstream, according to the mode of operation*/

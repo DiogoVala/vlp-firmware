@@ -16,6 +16,7 @@
 #include "spi.h"
 #include "config.h"
 #include "uart.h"
+#include <util/delay.h>
 
 uint8_t payload_len;
 
@@ -120,7 +121,6 @@ uint8_t nrf24_dataReady()
     {
 	    return 1;
     }
-
     return !nrf24_rxFifoEmpty();
 }
 
@@ -180,7 +180,6 @@ void nrf24_send(uint8_t* value)
 	/* Go to Standby-I first */
 	nrf24_ce_digitalWrite(LOW);
 	
-	
 	/* Set to transmitter mode , Power up if needed */
 	nrf24_powerUpTx();
 
@@ -207,6 +206,13 @@ void nrf24_send(uint8_t* value)
 
 	/* Start the transmission */
 	nrf24_ce_digitalWrite(HIGH);
+	
+	/* Wait for message to be sent */
+	while(nrf24_isSending());
+	
+	/* Go back to RX mode. */
+	nrf24_powerUpRx();
+	
 }
 
 uint8_t nrf24_isSending()
