@@ -58,6 +58,7 @@ void sendCommand(led_t* ledp) {
 	uart_puts("\r\nSending Command... ");
     buildLEDCommand(ledp);
 
+<<<<<<< HEAD
 	nrf24_send(TX_command_array);
 	while(nrf24_isSending());
 	while(ack==false)
@@ -71,6 +72,8 @@ void sendCommand(led_t* ledp) {
 	}
 
 	#if 0
+=======
+>>>>>>> 5b4b8beef78bf4855af77e2ac8468db4e92f7f38
 	for(uint8_t i=0; i<10; i++)
 	{
 		nrf24_send(TX_command_array);
