@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <util/delay.h>
 
 /* File includes */
 #include "led.h"
@@ -54,30 +55,40 @@ void sendBitStream(uint8_t bitstream[], uint8_t bitstreamSize, led_t* ledp) {
 void sendCommand(led_t* ledp) {
 	
 	bool ack=false;
+	uint8_t ACK_tries=0;
+	uint8_t TX_tries=0;
 	
 	uart_puts("\r\nSending Command... ");
-    buildLEDCommand(ledp);
+	buildLEDCommand(ledp);
 
-	nrf24_send(TX_command_array);
-	while(nrf24_isSending());
-	while(ack==false)
-	{
-		while (nrf24_dataReady() == 0); // Wait for message
-		uart_puts("\r\nReceived Ack.");
-
-		nrf24_getData(ACK_Array); /* Store received bytes into temp array */
-		if(ACK_Array[ID]==TX_command_array[ID] && ACK_Array[IDENTIFIER]=='A')
-			ack=true;
-	}
-
-	#if 0
-	for(uint8_t i=0; i<10; i++)
+	while(ack==false && TX_tries<10)
 	{
 		nrf24_send(TX_command_array);
-		while(nrf24_isSending());
+		_delay_ms(5);
+		while(ack==false && ACK_tries<1000)
+		{
+			nrf24_getData(ACK_Array); /* Store received bytes into temp array */
+			if(ACK_Array[ID]==TX_command_array[ID] && ACK_Array[IDENTIFIER]=='A')
+			{
+				
+				ack=true;
+			}
+			ACK_tries++;
+		}
+		TX_tries++;
 	}
-	#endif
-	uart_puts("Sent!\r\n");
+	
+	uint8_t message_string[100]={};
+	if(ack==false)
+	{
+		sprintf(message_string, "\r\nCommand to luminary %d sent but acknowledgment failed.", TX_command_array[ID]);
+		uart_puts(message_string);
+	}
+	else
+	{
+		sprintf(message_string, "\r\nCommand to luminary %d  sent and successfully received.", TX_command_array[ID]);
+		uart_puts(message_string);
+	}
 }
 
 /* Builds the command array with the led params to send via RF */
