@@ -15,13 +15,11 @@
 #include "led.h"
 #include "config.h"
 
+/* COMPB register values for VPPM transitions */
 volatile uint16_t compB0_1;
 volatile uint16_t compB1_0;
 volatile uint16_t * compB[2] = {&compB1_0, &compB0_1};
 
-/*
- * 
- */
 void stopTimer();
 
 void setupTimer(led_t *ledp) {
@@ -36,13 +34,15 @@ void setupTimer(led_t *ledp) {
     switch (ledp->ledMode) {
 
         case LED_MODE_DC:
+			TIMSK1 = (0 << OCIE1A) | (0 << OCIE1B); /* Enable interrupts on output compare for OCR1A and OCR1B */
             stopTimer();
             break;
 
         case LED_MODE_ARBITRARY:
             compA = ((F_CPU / getLedFrequency(ledp)) - 1); /* Define o periodo de um bit */
             OCR1A = compA; /* Timer1A compare register */
-            TIMSK1 = (1 << OCIE1A); /* Enable timer1A Interrupts*/
+            TIMSK1 = (1 << OCIE1A) | (0 << OCIE1B); /* Enable timer1A Interrupts*/
+			sei(); /* Enable global interrupts */
             break;
 
         case LED_MODE_VPPM:
@@ -54,14 +54,15 @@ void setupTimer(led_t *ledp) {
             OCR1B = compB0_1; /* First interrupt will be useless, so any value is ok */
 
             TIMSK1 = (1 << OCIE1A) | (1 << OCIE1B); /* Enable interrupts on output compare for OCR1A and OCR1B */
-
+			sei(); /* Enable global interrupts */
             break;
 
         default:
+			TIMSK1 = (0 << OCIE1A) | (0 << OCIE1B); /* Enable interrupts on output compare for OCR1A and OCR1B */
+			stopTimer();
             break;
     }
     TCCR1B = (1 << WGM12) | (1 << CS10); /* "Clear Timer on Compare Match with OCR1A" and "Clock with no prescaling" */
-    sei(); /* Enable global interrupts */
 }
 
 void stopTimer() {

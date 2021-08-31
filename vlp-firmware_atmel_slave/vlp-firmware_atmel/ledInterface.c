@@ -16,10 +16,7 @@
 #include "led.h"
 #include "ledInterface.h"
 #include "config.h"
-#include "timer.h"
 #include "digPot.h"
-#include "stdio.h"
-#include "uart.h"
 #include <util/delay.h>
 
 /* Prototypes of private functions */
@@ -30,13 +27,13 @@ void setHWLEDIntensity(uint8_t ledIntensity);
 
 /* LED setup with default parameters */
 void startupLED(led_t* ledp) {
-    setLEDIOpins();
 	
+    setLEDIOpins();
 	setHWLEDIntensity(0); /* Set Intensity to zero before switching on LED to avoid full brightness */
     setLEDPowerSwitchPin(LED_ON);
     setLEDStatePin(ledp->ledState);
 
-    /* Incremental increase in intensity to avoid burning people's eyes */
+    /* Soft start  */
     for (uint8_t intensity = 0; intensity < ledp->ledIntensity; intensity++) {
         _delay_ms(10);
         setHWLEDIntensity(intensity);
@@ -47,7 +44,6 @@ void startupLED(led_t* ledp) {
 void updateLEDHW(led_t* ledp) {
     setLEDStatePin(ledp->ledState);
     setHWLEDIntensity(ledp->ledIntensity);
-    setupTimer(ledp); /* Changes how the timer behaves, depends on mode*/
 }
 
 void setLEDPowerSwitchPin(uint8_t ledPower) {

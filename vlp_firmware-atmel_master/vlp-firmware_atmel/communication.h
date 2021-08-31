@@ -21,20 +21,21 @@
 /* Maximum number of bits in the bitstream */
 #define BITSTREAM_MAX_BITS 56 /* COMMAND_LENGTH*8 */
 
-/* Number of TX retries if ACK failed */
+/* Number of TX retries if ACK not received */
 #define MAX_TX_RETRIES 10
 
-/* Number of tries to receive ACK */
-#define MAX_ACK_RX_RETRIES 10000
+/* Number of retries to receive ACK */
+#define MAX_ACK_RX_RETRIES 1000
 
 /* Send message to all slaves if ID is: */
 #define BROADCAST 0xFF
 
-/* Identifies that the bytes contain a bitstream */
+/* Identifies that the command contain a bitstream */
 #define BITSTREAM_IDENTIFIER 0xFF
 
 /* Maximum number of luminaries */
-#define MAX_LUMINARIES 254
+/* Maximum is 255, but we don't use that many, so it's faster to have only the necessary ones */
+#define MAX_LUMINARIES 16 
 
 /* Byte position of each parameter */
 enum command_params {
@@ -53,7 +54,7 @@ enum bitstream_params {
     BITSTREAM
 };
 
-/* Builds and sends the bitstream via RF*/
+/* Builds and sends the bitstream */
 void sendBitStream(uint8_t bitstream[], uint8_t bitstreamSize, led_t* ledp);
 
 /* Builds and sends command with led params */

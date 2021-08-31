@@ -13,18 +13,26 @@
 #include "led.h"
 
 /* Debug mode */
-#define DEBUG_COMM false 
+#define DEBUG_COMM false
 
 /* Number of bytes to receive over RF - Must match the Master */
-#define COMMAND_LENGTH 7 
+#define COMMAND_LENGTH 7
 
 /* Maximum number of bits in the bitstream */
 #define BITSTREAM_MAX_BITS 56 /* COMMAND_LENGTH*8 */
 
-/* Number of ACK to send after receiving a message 
- * More replies ensures the master receives a response 
- * but will occupy the slave for a longer period of time */
-#define ACK_REPLIES 20 
+/* Number of ACK replies */
+#define ACK_REPLIES 20
+
+/* Send message to all slaves if ID is: */
+#define BROADCAST 0xFF
+
+/* Identifies that the bytes contain a bitstream */
+#define BITSTREAM_IDENTIFIER 0xFF
+
+/* Maximum number of luminaries */
+/* Maximum is 255, but we don't use that many, so it's faster to have only the necessary ones */
+#define MAX_LUMINARIES 16 
 
 /* Byte position of each parameter */
 enum command_params {
@@ -44,7 +52,7 @@ enum bitstream_params {
 };
 
 /* Checks the RF module for new data and processes it */
-void checkRF();
+void checkRF(led_t* ledp);
 
 /* Gets the next bit in the bitstream, according to the mode of operation*/
 uint8_t getBit();

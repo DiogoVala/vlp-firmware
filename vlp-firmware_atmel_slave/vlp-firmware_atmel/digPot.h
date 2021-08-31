@@ -9,6 +9,8 @@
 #ifndef __DIGPOT_H_
 #define __DIGPOT_H_
 
+#include <avr/io.h>
+
 /* Pot nomenclature
  *    A
  *    |
@@ -24,7 +26,11 @@
 #define R_WIPER 50.0f /* Wiper resistance */
 #define POT_MAX_CURRENT 0.530F
 
-/* Sets the voltage between W and B to V_WB */
+/* DIGPOT Pinout */
+#define POT_PORT	PORTB
+#define POT_CS		DDB1
+
+/* Sets the intensity to 0-100% */
 void digitalPotWrite(uint8_t LedIntensity);
 
 #endif

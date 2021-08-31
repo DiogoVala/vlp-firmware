@@ -1,3 +1,11 @@
+/* uart.h
+ * 
+ * Author: Diogo Vala
+ *
+ * Description: Handles UART 
+ * 
+ */
+
 #ifndef UART_H
 #define UART_H
 

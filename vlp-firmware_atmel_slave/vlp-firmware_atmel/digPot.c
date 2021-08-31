@@ -7,10 +7,11 @@
  */
 /* Library Includes */
 #include <stdint.h>
+#include <util/delay.h>
 
 #include "digPot.h"
-#include "config.h"
 #include "spi.h"
+#include "config.h"
 
 void digitalPotWrite(uint8_t LedIntensity) {
     float V_WB = LedIntensity * 0.01 * POT_MAX_CURRENT*V_A;
@@ -21,14 +22,10 @@ void digitalPotWrite(uint8_t LedIntensity) {
     if (D < 0) D = 0;
     else if (D > MAX_D) D = MAX_D;
 
-    /* Clear the SS bit to select the slave line */
-    clr_bit(SPI_PORT, SPI_SS_DIGPOTSLAVE);
-
-    for (int i = 0; i < 5; i++); //NOTE: WHY THE DELAY?
-    //  send in the address and value via SPI:
+    clr_bit(POT_PORT, POT_CS);
+	_delay_us(2);
     spi_exchange((uint8_t) D);
-    for (int i = 0; i < 5; i++);
-    /* Set the SS bit to deselect the slave line */
-    set_bit(SPI_PORT, SPI_SS_DIGPOTSLAVE);
+	_delay_us(2);
+    set_bit(POT_PORT, POT_CS);
 }
 

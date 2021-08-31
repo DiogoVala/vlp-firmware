@@ -32,22 +32,18 @@ uint8_t nrf24_addr[][5] = {
 /* init the hardware pins */
 void nrf24_init()
 {
-	uart_puts("\r\nInitializing nrf24 module...");
-
-	NRF24_DDR |= _BV(NRF24_CE); /* Set Chip Enable pin as output */
+	NRF24_DDR |= (_BV(NRF24_CE) | _BV(NRF24_CS)); /* Set Chip Enable pin as output */
 	nrf24_tx_address(nrf24_addr[ADDRESS_SLAVE]);
 	nrf24_rx_address(nrf24_addr[ADDRESS_MASTER]);
 	nrf24_ce_digitalWrite(LOW);
 	nrf24_csn_digitalWrite(HIGH);
-
-	uart_puts(" Done!");
+	
+	nrf24_config(NRF24_CHANNEL,NRF24_PAYLENGTH);
 }
 
 /* configure the module */
 void nrf24_config(uint8_t channel, uint8_t pay_length)
 {
-	uart_puts("\r\nConfiguring nrf24 module...");
-	
 	/* Use static payload length ... */
 	payload_len = pay_length;
 
@@ -82,8 +78,6 @@ void nrf24_config(uint8_t channel, uint8_t pay_length)
 	
 	// Start listening
 	nrf24_powerUpRx();
-	
-	uart_puts(" Done!");
 }
 
 /* Set the RX address */
@@ -357,16 +351,14 @@ void nrf24_ce_digitalWrite(uint8_t state)
 	}
 }
 
-// MOVE THESE TO SPI FILE
-/* ------------------------------------------------------------------------- */
 void nrf24_csn_digitalWrite(uint8_t state)
 {
 	if(state)
 	{
-		set_bit(SPI_PORT,SPI_SS_NRF24L01);
+		set_bit(NRF24_PORT, NRF24_CS);
 	}
 	else
 	{
-		clr_bit(SPI_PORT,SPI_SS_NRF24L01);
+		clr_bit(NRF24_PORT, NRF24_CS);
 	}
 }

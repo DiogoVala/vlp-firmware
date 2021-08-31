@@ -74,4 +74,6 @@ uint8_t getLedDutyCycle(led_t *ledp);
 
 void setLedDutyCycle(led_t *ledp, uint8_t ledDutyCycle);
 
+const char * getLedModeVerbose(led_t *ledp);
+
 #endif

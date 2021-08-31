@@ -17,10 +17,6 @@
 
 #define UART_BAUD_RATE	9600 
 
-#define NRF24_CHANNEL 2 /* RF Frequency = 2400 + NRF24_CHANNEL (MHZ) */
-#define NRF24_PAYLENGTH 7 /* Bytes sent/received by RF module */
-
-
 /* Macro functions d*/
 #define set_bit(REGISTER, BIT)    REGISTER |=  _BV(BIT)
 #define clr_bit(REGISTER, BIT)    REGISTER &= ~(_BV(BIT))

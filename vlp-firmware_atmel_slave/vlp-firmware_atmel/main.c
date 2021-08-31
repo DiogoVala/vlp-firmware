@@ -25,12 +25,15 @@
 #include "config.h"
 #include "communication.h"
 
-#define INPUT_BUFFER_SIZE 8
+/* Debug the bits the ISR is putting out. 
+ * Using the uart delays the ISR, so use a low frequency when testing */
+#define DEBUG_ISR false
 
-extern uint8_t bitstream[BITSTREAM_MAX_BITS];
+/* COMPB values are taken from timer module */
 extern uint16_t * compB[2];
 
-volatile led_t led; /* LED object */
+/* LED object */
+static led_t led; 
 
 /* Em OOK+Manchester, só a ISR COMPA é utilizada para definir os periodos
  * de cada bit. Em VPPM, esta também altera o valor do OCR1B conforme o duty cycle
@@ -40,6 +43,13 @@ volatile led_t led; /* LED object */
 ISR(TIMER1_COMPA_vect) // Timer1 ISR COMPA
 {
     uint8_t bit = getBit(&led); /* Get next bit in bitstream */
+	
+	#if DEBUG_ISR
+		uint8_t buf[5]={};
+		sprintf(buf, "%d", bit);
+		uart_puts(buf);
+	#endif
+	
 	OCR1B = *compB[bit];
 	if (bit) {
         set_bit(LED_PORT, LED_CTL); /* Turn on */
@@ -61,20 +71,21 @@ ISR(TIMER1_COMPB_vect) // Timer1 ISR COMPB
 
 int main() {
 	
-    /* Initialize common modules */
 	uart_init();
-	uart_puts("\n\x1b[2J\r"); //Clear screen
+	uart_puts("\n\x1b[2J\r"); /*Clear screen */
 	uart_puts("\r\nInitializing SLAVE.");
 	
 	spi_master_init();
-	nrf24_init();
-	nrf24_config(NRF24_CHANNEL,NRF24_PAYLENGTH);
 	
-    initLEDObject(&led); /* Initialize LED object with default parameters */
+	nrf24_init();
+	
+	/* Initialize LED object with default parameters */
+    initLEDObject(&led); 
 	startupLED(&led);
 			
 	while (1) {
-		checkRF(&led); /* Checks for incoming messages and updates LED */
+		/* Checks for incoming messages and updates LED */
+		checkRF(&led); 
 	}
 
 	return(EXIT_SUCCESS);

@@ -1,3 +1,10 @@
+/* uart.c
+ * 
+ * Author: Diogo Vala
+ *
+ * Description: Handles UART 
+ * 
+ */
 
 #include <avr/io.h>      // Contains all the I/O Register Macros
 
@@ -27,12 +34,12 @@ void uart_puts(const char *s )
 	while (*s)
 	uart_putc(*s++);
 
-}/* uart_puts */
+	}/* uart_puts */
 
-uint8_t uart_getc()
-{
-	uint8_t DataByte;
-	while (( UCSR0A & (1<<RXC0)) == 0) {}; // Do nothing until data have been received
-	DataByte = UDR0 ;
-	return DataByte;
-}
+	uint8_t uart_getc()
+	{
+		uint8_t DataByte;
+		while (( UCSR0A & (1<<RXC0)) == 0) {}; // Do nothing until data have been received
+		DataByte = UDR0 ;
+		return DataByte;
+	}

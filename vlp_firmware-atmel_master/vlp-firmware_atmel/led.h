@@ -14,7 +14,7 @@
 
 #include <stdint.h>
 
-#define LED_HW_ID 13 /* Physical ID of this LED*/
+#define LED_HW_ID 1 /* Physical ID of this LED - Ignore if programming MASTER*/
 
 /* General defs */
 #define LED_ON 1
@@ -73,5 +73,7 @@ void setLedFrequency(led_t *ledp, uint16_t ledFrequency);
 uint8_t getLedDutyCycle(led_t *ledp);
 
 void setLedDutyCycle(led_t *ledp, uint8_t ledDutyCycle);
+
+const char * getLedModeVerbose(led_t *ledp);
 
 #endif

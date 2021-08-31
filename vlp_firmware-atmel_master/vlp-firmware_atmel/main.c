@@ -9,11 +9,9 @@
 /* Library Includes */
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
 #include <avr/interrupt.h>
-#include <avr/pgmspace.h>
 #include <util/delay.h>  
 
 /* File includes */
@@ -24,42 +22,41 @@
 #include "config.h"
 #include "communication.h"
 
-#define INPUT_BUFFER_SIZE 8
+/* Max number of chars to read from terminal */
+#define INPUT_BUFFER_SIZE 100
 
+/* Command type */
 #define BITSTREAM false
 #define COMMAND true
 
-extern uint8_t bitstream[BITSTREAM_MAX_BITS];
-
-
+static uint8_t bitstream[BITSTREAM_MAX_BITS];
 
 int main() {
 	
 	led_t led; /* LED object */
-
-    /* Initialize common modules */
-    uart_init();
-    uart_puts("\n\x1b[2J\r"); //Clear screen
-    uart_puts("\r\nInitializing MASTER.");
-
-    spi_master_init();
-    nrf24_init();
-    nrf24_config(NRF24_CHANNEL, NRF24_PAYLENGTH);
 	
+	uint8_t msgBuffer[INPUT_BUFFER_SIZE]; /* Command buffer */
+	uint8_t msgbufferIdx = 0; /* Current buffer index */
+	uint8_t command_pos = 0; /* What command is being read */
 
-    uint8_t msgBuffer[INPUT_BUFFER_SIZE]; /* Command buffer */
-    uint8_t msgbufferIdx = 0; /* Current buffer index */
-    uint8_t command_pos = 0; /* What command is being read */
+	uint8_t bitstreamIdx = 0;
+	uint8_t bitstreamSize = 0; /* Dynamic size of bitstream */
 
-    uint8_t bitstreamIdx = 0;
-    uint8_t bitstreamSize = 0; /* Dynamic size of bitstream */
+	uint8_t uart_char;
 
-    uint8_t uart_char;
+	bool input_type = COMMAND; 
 
-    bool input_type = false; /* false = normal command ; true = bitstream */
+	uart_init();
+	uart_puts("\n\x1b[2J\r"); /*Clear screen */
+	uart_puts("\r\nInitializing MASTER.");
+	
+	spi_master_init();
+	
+	nrf24_init();
+	
     uart_puts("\r\n\nWaiting command input.");
-	uart_puts("\r\n($ID,State,Mode,Intensity,Freq,Duty,*)");
-	uart_puts("\r\n($ID,b10101010*)\r\n\n");
+    uart_puts("\r\n($ID,State,Mode,Intensity,Freq,Duty,*)");
+    uart_puts("\r\n($ID,b10101010*)\r\n\n");
 
     sei();
 
@@ -121,7 +118,7 @@ int main() {
                 break;
 
             case '\r':
-                uart_puts("\r\n"); //Clear screen/
+                uart_puts("\r\n");
                 break;
 
             default: /* Add character to buffer */

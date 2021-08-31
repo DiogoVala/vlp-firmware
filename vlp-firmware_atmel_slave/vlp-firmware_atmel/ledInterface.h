@@ -12,7 +12,7 @@
 #ifndef LEDINTERFACE_H
 #define	LEDINTERFACE_H
 
-/* Pin configuration */
+/* LED Pinout */
 #define LED_DDR DDRD
 #define LED_PORT PORTD
 #define LED_CTL DDD6

@@ -11,7 +11,6 @@
 
 #include <stdint.h>
 #include "led.h"
-//#include "config.h"
 
 void initLEDObject(led_t *ledp) {
 
@@ -41,6 +40,25 @@ void setLedState(led_t *ledp, uint8_t ledState) {
 
 uint8_t getLedMode(led_t *ledp) {
     return ledp->ledMode;
+}
+
+const char * getLedModeVerbose(led_t *ledp)
+{
+	switch(ledp->ledMode){
+		case LED_MODE_DC:
+			return "DC";
+			break;
+		case LED_MODE_ARBITRARY:
+			return "ARBITRARY";
+			break;
+		case LED_MODE_VPPM:
+			return "VPPM";
+			break;
+		default:
+			return "INVALID";
+			break;
+	}
+	return "INVALID";
 }
 
 void setLedMode(led_t *ledp, led_mode_t ledMode) {

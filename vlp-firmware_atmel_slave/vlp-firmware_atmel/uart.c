@@ -1,3 +1,10 @@
+/* uart.c
+ * 
+ * Author: Diogo Vala
+ *
+ * Description: Handles UART 
+ * 
+ */
 
 #include <avr/io.h>      // Contains all the I/O Register Macros
 
