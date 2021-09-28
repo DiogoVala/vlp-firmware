@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <util/delay.h>
+#include <avr/wdt.h>
 
 /* File includes */
 #include "led.h"
@@ -41,10 +42,32 @@ bool isCommandValid();
 /* Checks the RF module for new data and processes it */
 void checkRF(led_t* ledp) {
 	
-    while (nrf24_dataReady() == 0); // Wait for message
+	uint8_t data_len=0;;
+	wdt_disable();
+	
+    while (!nrf24_dataReady()){ // Wait for message
+		wdt_reset();
+		uart_puts("\r\nReset.");
+	}
+	wdt_reset();
     cli();
 
-    nrf24_getData(RX_command_array); /* Store received bytes command array */
+    nrf24_getData(RX_command_array, &data_len); /* Store received bytes command array */
+	
+	
+	uint8_t buf[10]={0};
+	for (uint8_t i=0; i< data_len; i++)
+	{
+		sprintf(buf, "0x%x, ", RX_command_array[i]);
+		uart_puts(buf);
+	}
+	
+	
+	if(RX_command_array[0]==0xff)
+	{
+		wdt_enable(WDTO_15MS);
+		while(1);
+	}
 	
 	#if DEBUG_COMM 
 		uint8_t buf[10]={0};
@@ -82,16 +105,6 @@ void checkRF(led_t* ledp) {
 				#endif
 			}
         }
-		
-		/* Send ACK reply */
-        for(uint16_t i=0; i<ACK_REPLIES; i++)
-        {
-			nrf24_send(ACK_Array);
-			
-			#if DEBUG_COMM 
-			uart_puts("\r\nAck Sent.");
-			#endif
-		}
     }
     sei();
 }

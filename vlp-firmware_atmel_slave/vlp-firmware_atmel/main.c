@@ -76,8 +76,10 @@ int main() {
 	uart_puts("\r\nInitializing SLAVE.");
 	
 	spi_master_init();
+	uart_puts("\r\nSPI init.");
 	
 	nrf24_init();
+	uart_puts("\r\nRF24 init.");
 	
 	/* Initialize LED object with default parameters */
     initLEDObject(&led); 

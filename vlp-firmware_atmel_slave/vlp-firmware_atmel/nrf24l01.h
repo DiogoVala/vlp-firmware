@@ -10,12 +10,11 @@
 /* RF24 Module operating at (2400 + NRF24_CHANNEL) MHz*/
 #define NRF24_CHANNEL 2
 
-#define nrf24_ADDR_LEN 5
-#define nrf24_CONFIG ((1<<EN_CRC)|(0<<CRCO))
+#define nrf24_ADDR_LEN 3
 
 /* Error codes */
 #define NRF24_TRANSMISSON_OK 0
-#define NRF24_MESSAGE_LOST   1
+#define NRF24_MESSAGE_LOST 1
 
 /* NRF24 Pinout */
 #define NRF24_DDR	DDRB
@@ -28,10 +27,10 @@
 #define HIGH 1
 
 /* adjustment functions */
-void    nrf24_init();
-void    nrf24_rx_address(uint8_t* adr);
-void    nrf24_tx_address(uint8_t* adr);
-void    nrf24_config(uint8_t channel, uint8_t pay_length);
+void nrf24_init();
+void nrf24_rx_address(uint8_t* adr);
+void nrf24_tx_address(uint8_t* adr);
+void nrf24_config(uint8_t channel);
 
 /* state check functions */
 uint8_t nrf24_dataReady();
@@ -40,8 +39,8 @@ uint8_t nrf24_getStatus();
 uint8_t nrf24_rxFifoEmpty();
 
 /* core TX / RX functions */
-void nrf24_send(uint8_t* value);
-void nrf24_getData(uint8_t* data);
+void nrf24_send(uint8_t* data, uint8_t pkt_len);
+void nrf24_getData(uint8_t * data, uint8_t * pkt_len);
 
 /* use in dynamic length mode */
 uint8_t nrf24_payloadLength();
@@ -59,8 +58,8 @@ void    nrf24_powerDown();
 void nrf24_transmitSync(uint8_t* dataout,uint8_t len);
 void nrf24_transferSync(uint8_t* dataout,uint8_t* datain,uint8_t len);
 void nrf24_configRegister(uint8_t reg, uint8_t value);
-void nrf24_readRegister(uint8_t reg, uint8_t* value, uint8_t len);
-void nrf24_writeRegister(uint8_t reg, uint8_t* value, uint8_t len);
+uint8_t nrf24_readRegister(uint8_t reg);
+void nrf24_writeRegister(uint8_t reg, uint8_t value);
 void nrf24_ce_digitalWrite(uint8_t state);
 void nrf24_csn_digitalWrite(uint8_t state);
 
