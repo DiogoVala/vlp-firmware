@@ -50,6 +50,7 @@ void nrf24_config(uint8_t channel, uint8_t pay_length)
 	// Set RF channel
 	nrf24_configRegister(RF_CH,channel);
 
+#if 0
 	// Set length of incoming payload
 	nrf24_configRegister(RX_PW_P0, 0x00); // Auto-ACK pipe ...
 	nrf24_configRegister(RX_PW_P1, payload_len); // Data payload pipe
@@ -57,6 +58,14 @@ void nrf24_config(uint8_t channel, uint8_t pay_length)
 	nrf24_configRegister(RX_PW_P3, 0x00); // Pipe not used
 	nrf24_configRegister(RX_PW_P4, 0x00); // Pipe not used
 	nrf24_configRegister(RX_PW_P5, 0x00); // Pipe not used
+	
+	// Dynamic length configurations: No dynamic length
+	nrf24_configRegister(DYNPD,(0<<DPL_P0)|(0<<DPL_P1)|(0<<DPL_P2)|(0<<DPL_P3)|(0<<DPL_P4)|(0<<DPL_P5));
+#endif
+
+	/* Dynamic payload length for TX & RX (pipes 0 and 1) */
+	nrf24_configRegister(DYNPD, 0x03);
+	nrf24_configRegister(FEATURE, 1 << EN_DPL);
 	
 	// 2 Mbps, TX gain: 0dbm
 	nrf24_configRegister(RF_SETUP, (1 << RF_PWR_LOW) | (1 << RF_PWR_HIGH) | (0 << RF_DR_LOW) | (1 << RF_DR_HIGH));
@@ -194,22 +203,29 @@ void nrf24_send(uint8_t* data, uint8_t pkt_len)
 	nrf24_ce_digitalWrite(HIGH);
 	
 }
-#if 0
-uint8_t nrf24_isSending()
+
+uint8_t nrf24_wait_tx_result()
 {
 	uint8_t status;
+	uint16_t timeout = 10000; /* ~100ms timeout */
 
 	/* read the current status */
 	status = nrf24_getStatus();
 	
 	/* if sending successful (TX_DS) or max retries exceeded (MAX_RT). */
-	if(status & ((1 << TX_DS)))
-	{
-		return 1; 
+	while ((!(status & (1 << TX_DS)) || (status & (1 << TX_FULL))) && !(status & (1 << MAX_RT)) && --timeout) {
+		status = nrf24_getStatus();
+		_delay_us(10);
 	}
-	return 0;
+	
+	/* Switch back to RX mode */
+	nrf24_powerUpRx();
+	
+	if(status & (1 << TX_DS))
+	return NRF24_TRANSMISSON_OK;
+	else
+	return NRF24_MESSAGE_LOST;
 }
-#endif
 
 /* Get status register data */
 uint8_t nrf24_getStatus()

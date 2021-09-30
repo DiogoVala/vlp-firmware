@@ -50,10 +50,11 @@
 #define RX_PW_P5    0x16
 #define FIFO_STATUS 0x17
 #define DYNPD       0x1C
+#define FEATURE	    0x1D
 
 /* Bit Mnemonics */
 
-/* configuration register */
+/* configuratio nregister */
 #define MASK_RX_DR  6
 #define MASK_TX_DS  5
 #define MASK_MAX_RT 4
@@ -61,6 +62,9 @@
 #define CRCO        2
 #define PWR_UP      1
 #define PRIM_RX     0
+#define EN_DPL	    2
+#define EN_ACK_PAY  1
+#define EN_DYN_ACK  0
 
 /* enable auto acknowledgment */
 #define ENAA_P5     5

@@ -39,7 +39,7 @@ void nrf24_config(uint8_t channel, uint8_t pay_length);
 
 /* state check functions */
 uint8_t nrf24_dataReady();
-uint8_t nrf24_isSending();
+uint8_t nrf24_wait_tx_result();
 uint8_t nrf24_getStatus();
 uint8_t nrf24_rxFifoEmpty();
 

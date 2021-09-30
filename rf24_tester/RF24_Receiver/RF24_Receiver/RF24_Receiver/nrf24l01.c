@@ -50,6 +50,7 @@ void nrf24_config(uint8_t channel, uint8_t pay_length)
 	// Set RF channel
 	nrf24_configRegister(RF_CH,channel);
 
+#if 0
 	// Set length of incoming payload
 	nrf24_configRegister(RX_PW_P0, 0x00); // Auto-ACK pipe ...
 	nrf24_configRegister(RX_PW_P1, payload_len); // Data payload pipe
@@ -57,6 +58,14 @@ void nrf24_config(uint8_t channel, uint8_t pay_length)
 	nrf24_configRegister(RX_PW_P3, 0x00); // Pipe not used
 	nrf24_configRegister(RX_PW_P4, 0x00); // Pipe not used
 	nrf24_configRegister(RX_PW_P5, 0x00); // Pipe not used
+	
+	// Dynamic length configurations: No dynamic length
+	nrf24_configRegister(DYNPD,(0<<DPL_P0)|(0<<DPL_P1)|(0<<DPL_P2)|(0<<DPL_P3)|(0<<DPL_P4)|(0<<DPL_P5));
+#endif
+
+	/* Dynamic payload length for TX & RX (pipes 0 and 1) */
+	nrf24_configRegister(DYNPD, 0x03);
+	nrf24_configRegister(FEATURE, 1 << EN_DPL);
 	
 	// 2 Mbps, TX gain: 0dbm
 	nrf24_configRegister(RF_SETUP, (1 << RF_PWR_LOW) | (1 << RF_PWR_HIGH) | (0 << RF_DR_LOW) | (1 << RF_DR_HIGH));
@@ -73,9 +82,6 @@ void nrf24_config(uint8_t channel, uint8_t pay_length)
 	// Auto retransmit delay: 1000 us and Up to 15 retransmit trials
 	//nrf24_configRegister(SETUP_RETR,(0x04<<ARD)|(0x0F<<ARC));
 
-	// Dynamic length configurations: No dynamic length
-	nrf24_configRegister(DYNPD,(0<<DPL_P0)|(0<<DPL_P1)|(0<<DPL_P2)|(0<<DPL_P3)|(0<<DPL_P4)|(0<<DPL_P5));
-	
 	// Start listening
 	nrf24_powerUpRx();
 }
@@ -275,7 +281,6 @@ void nrf24_transmitSync(uint8_t* dataout,uint8_t len)
 	{
 		spi_exchange(dataout[i]);
 	}
-
 }
 
 /* Clocks only one byte into the given nrf24 register */

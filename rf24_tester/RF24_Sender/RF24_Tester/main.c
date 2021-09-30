@@ -44,6 +44,7 @@ int main(void)
 		sprintf(buf, "\rTry %d ... ", (int)try++);
 		//uart_puts(buf);
 		nrf24_send(command, sizeof(command));
+		nrf24_wait_tx_result();
 		
     }
 }

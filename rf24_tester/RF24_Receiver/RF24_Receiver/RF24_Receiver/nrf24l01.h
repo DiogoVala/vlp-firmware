@@ -55,9 +55,9 @@ uint8_t nrf24_lastMessageStatus();
 uint8_t nrf24_retransmissionCount();
 
 /* power management */
-void    nrf24_powerUpRx();
-void    nrf24_powerUpTx();
-void    nrf24_powerDown();
+void nrf24_powerUpRx();
+void nrf24_powerUpTx();
+void nrf24_powerDown();
 
 /* low level interface ... */
 void nrf24_transmitSync(uint8_t* dataout,uint8_t len);
