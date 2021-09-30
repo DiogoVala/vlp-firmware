@@ -24,9 +24,11 @@
 #include "nrf24l01.h"
 #include "uart.h"
 
-uint8_t RX_command_array[NRF24_PAYLENGTH] = {}; /* Received bytes go here */
-uint8_t ACK_Array[NRF24_PAYLENGTH] = {LED_HW_ID, 'A'}; /* Array sent for ACK */
-uint8_t bitstream_byte_array[NRF24_PAYLENGTH] = {0}; /* Received bitstream bytes go here */
+/* Debug mode */
+#define DEBUG_COMM true
+
+uint8_t RX_command_array[NRF24_MAX_PAYLOAD] = {}; /* Received bytes go here */
+uint8_t bitstream_byte_array[NRF24_MAX_PAYLOAD] = {0}; /* Received bitstream bytes go here */
 uint8_t bitstream[BITSTREAM_MAX_BITS] = {1,0}; /* Bitstream bits go here */
 uint8_t byte_count = 0; /* Number of bytes in received bitstream */
 uint8_t bitstreamSize = 2; /* Number of bits in received bitstream */
@@ -42,26 +44,15 @@ bool isCommandValid();
 /* Checks the RF module for new data and processes it */
 void checkRF(led_t* ledp) {
 	
-	uint8_t data_len=0;;
-	wdt_disable();
-	
-    while (!nrf24_dataReady()){ // Wait for message
+	uint8_t data_len=0;
+
+    while (nrf24_dataReady() == NRF24_DATA_UNAVAILABLE){ // Wait for message
 		wdt_reset();
-		uart_puts("\r\nReset.");
 	}
-	wdt_reset();
     cli();
 
+	memset(RX_command_array, '\0', sizeof(RX_command_array));
     nrf24_getData(RX_command_array, &data_len); /* Store received bytes command array */
-	
-	
-	uint8_t buf[10]={0};
-	for (uint8_t i=0; i< data_len; i++)
-	{
-		sprintf(buf, "0x%x, ", RX_command_array[i]);
-		uart_puts(buf);
-	}
-	
 	
 	if(RX_command_array[0]==0xff)
 	{
@@ -72,7 +63,7 @@ void checkRF(led_t* ledp) {
 	#if DEBUG_COMM 
 		uint8_t buf[10]={0};
 		uart_puts("\r\nReceived data:\r\n");
-		for (uint8_t i=0; i<NRF24_PAYLENGTH; i++)
+		for (uint8_t i=0; i<data_len; i++)
 		{
 			sprintf(buf, "0x%x, ", RX_command_array[i]);
 			uart_puts(buf);

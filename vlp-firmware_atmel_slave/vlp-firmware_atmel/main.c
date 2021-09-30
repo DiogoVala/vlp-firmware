@@ -24,6 +24,7 @@
 #include "uart.h"
 #include "config.h"
 #include "communication.h"
+#include "eeprom.h"
 
 /* Debug the bits the ISR is putting out. 
  * Using the uart delays the ISR, so use a low frequency when testing */
@@ -71,14 +72,22 @@ ISR(TIMER1_COMPB_vect) // Timer1 ISR COMPB
 
 int main() {
 	
+	uint8_t TX_addr[nrf24_ADDR_WIDTH];
+	uint8_t RX_addr[nrf24_ADDR_WIDTH];
+	
 	uart_init();
 	uart_puts("\n\x1b[2J\r"); /*Clear screen */
 	uart_puts("\r\nInitializing SLAVE.");
 	
-	spi_master_init();
+	spi_init();
 	uart_puts("\r\nSPI init.");
 	
-	nrf24_init();
+	for(uint8_t i=0; i<nrf24_ADDR_WIDTH; i++){
+		RX_addr[i]=eeprom_read(EEPROM_IDX_RX_ADDR+i);
+		TX_addr[i]=eeprom_read(EEPROM_IDX_TX_ADDR+i);
+	}
+	
+	nrf24_config(RX_addr, TX_addr);
 	uart_puts("\r\nRF24 init.");
 	
 	/* Initialize LED object with default parameters */

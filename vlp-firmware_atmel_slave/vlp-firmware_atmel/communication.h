@@ -12,17 +12,8 @@
 
 #include "led.h"
 
-/* Debug mode */
-#define DEBUG_COMM false
-
-/* Number of bytes to receive over RF - Must match the Master */
-#define COMMAND_LENGTH 7
-
 /* Maximum number of bits in the bitstream */
-#define BITSTREAM_MAX_BITS 56 /* COMMAND_LENGTH*8 */
-
-/* Number of ACK replies */
-#define ACK_REPLIES 20
+#define BITSTREAM_MAX_BITS 40 /* COMMAND_LENGTH*8 */
 
 /* Send message to all slaves if ID is: */
 #define BROADCAST 0xFF
