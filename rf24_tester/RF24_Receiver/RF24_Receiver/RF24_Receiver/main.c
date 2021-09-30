@@ -30,31 +30,30 @@ int main(void)
 	uart_puts("\x1b[2J\r\n");
 	
 	spi_init();
-	nrf24_init();
+
+	uint8_t tx_addr[]={'M', 'A', 'S', 'T', 'R'};
+	uint8_t rx_addr[]={'S', 'L', 'A', 'V', 'E'};
+	
+	nrf24_config(rx_addr,tx_addr);
 	
 	uint8_t data[32];
 	uint8_t data_len=7;
 	
 	uint8_t uart_buffer[20]={};
-		
-	uint32_t try=0;
 	
 	uart_puts("\r\n");
 	
     while(1)
     {
-		while(!nrf24_dataReady()){
-			sprintf(uart_buffer, "\rTry %d ... ", (int)try++);
-			//uart_puts(uart_buffer);
-			//uart_puts(" Data not ready.");
-			break;
-		}
-		nrf24_getData(data, data_len);
+		while(!nrf24_dataReady());
+		nrf24_getData(data, &data_len);
+		
 		uart_puts("\r\nData ready: ");
 		for(uint8_t i=0; i<data_len; i++)
 		{
 			sprintf(uart_buffer, "%c ", data[i]);
 			uart_puts(uart_buffer);
 		}
+		
     }
 }

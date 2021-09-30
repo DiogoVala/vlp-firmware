@@ -40,6 +40,7 @@ C_SRCS +=  \
 ../eeprom.c \
 ../main.c \
 ../nrf24l01.c \
+../spi.c \
 ../uart.c
 
 
@@ -53,24 +54,28 @@ OBJS +=  \
 eeprom.o \
 main.o \
 nrf24l01.o \
+spi.o \
 uart.o
 
 OBJS_AS_ARGS +=  \
 eeprom.o \
 main.o \
 nrf24l01.o \
+spi.o \
 uart.o
 
 C_DEPS +=  \
 eeprom.d \
 main.d \
 nrf24l01.d \
+spi.d \
 uart.d
 
 C_DEPS_AS_ARGS +=  \
 eeprom.d \
 main.d \
 nrf24l01.d \
+spi.d \
 uart.d
 
 OUTPUT_FILE_PATH +=RF24_Receiver.elf
@@ -102,6 +107,13 @@ LINKER_SCRIPT_DEP+=
 	
 
 ./nrf24l01.o: .././nrf24l01.c
+	@echo Building file: $<
+	@echo Invoking: XC8 C Compiler : 2.31
+	$(QUOTE)C:\Program Files\Microchip\xc8\v2.31\bin\xc8-cc.exe$(QUOTE)  -mcpu=ATmega328P  -mdfp="C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\xc8"  -c -x c -funsigned-char -funsigned-bitfields -mext=cci -D__ATmega328P__ -DDEBUG  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
+./spi.o: .././spi.c
 	@echo Building file: $<
 	@echo Invoking: XC8 C Compiler : 2.31
 	$(QUOTE)C:\Program Files\Microchip\xc8\v2.31\bin\xc8-cc.exe$(QUOTE)  -mcpu=ATmega328P  -mdfp="C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\xc8"  -c -x c -funsigned-char -funsigned-bitfields -mext=cci -D__ATmega328P__ -DDEBUG  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 

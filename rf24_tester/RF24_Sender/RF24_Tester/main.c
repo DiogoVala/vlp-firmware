@@ -27,24 +27,34 @@ int main(void)
 	wdt_disable();
 	uart_init();
 	spi_init();
-	nrf24_init();
 	
 	uint8_t command[]={'T', 'E', 'S', 'T', 'I', 'N', 'G'};
+		
+	uint8_t tx_addr[]={'M', 'A', 'S', 'T', 'R'};
+	uint8_t rx_addr[]={'S', 'L', 'A', 'V', 'E'};
+		
+	nrf24_config(tx_addr,rx_addr);
 	
 	uint8_t tx_result;
 	
 	uint32_t try=0;
 
-	uint8_t buf[20]={};
-		
 	uart_puts("\r\n");
 	
-    while(1)
+	uint8_t flag=0;
+	
+    while(try++ < 100)
     {
-		sprintf(buf, "\rTry %d ... ", (int)try++);
-		//uart_puts(buf);
-		nrf24_send(command, sizeof(command));
-		nrf24_wait_tx_result();
+		_delay_ms(1000);
+		nrf24_sendData(command, sizeof(command));
 		
+		tx_result=nrf24_wait_tx_result();
+		if(tx_result != NRF24_MESSAGE_SENT)
+			flag=1;
     }
+	if(flag==1)
+		uart_puts("\r\nfailed");
+	else
+		uart_puts("\r\nno fails");
+	
 }

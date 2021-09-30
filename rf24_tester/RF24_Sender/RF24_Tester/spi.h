@@ -9,9 +9,6 @@
 #ifndef __SPI_H__
 #define __SPI_H__
 
-#include <avr/io.h>
-#include "uart.h"
-
 /* Pinout concerning SPI */
 #define SPI_PORT	 PORTB
 #define SPI_DDR		 DDRB
@@ -39,16 +36,13 @@
 #define SPI_MODE_MASK 0x0C  // CPOL = bit 3, CPHA = bit 2 on SPCR
 #define SPI_CLOCK_MASK 0x03  // SPR1 = bit 1, SPR0 = bit 0 on SPCR
 
-inline static uint8_t spi_exchange(uint8_t data) {
+/* Configure SPI  */
+void spi_init(void);
 
-    SPDR = data;
-    while (!(SPSR & _BV(SPIF))); /* Waits until SPIF is set */
-    return SPDR; /* Reading the data register after reading SPIF clears SPIF */
-}
+/* Send one byte over SPI */
+uint8_t spi_exchange(uint8_t data);
 
-inline static void spi_init(void) {
-	SPI_DDR = SPI_DDR | _BV(SPI_SS_NRF24) |_BV(SPI_SS_POT) | _BV(SPI_MOSI) |  _BV(SPI_SCK); /* Set pins as output */
-    SPCR = _BV(SPE) | 0 | _BV(MSTR) | (SPI_MODE0 & SPI_MODE_MASK) | (SPI_CLOCK_DIV4 & SPI_CLOCK_MASK);
-}
+/* Send and receive multiple bytes over SPI */
+void spi_exchange_n(uint8_t* dataout,uint8_t* datain,uint8_t len);
 
 #endif

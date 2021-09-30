@@ -24,6 +24,9 @@
     $Id$
 */
 
+/* Base configuration for all modes */
+#define nrf24_CONFIG ((1<<EN_CRC)|(0<<CRCO))
+
 /* Memory Map */
 #define CONFIG      0x00
 #define EN_AA       0x01
@@ -54,7 +57,7 @@
 
 /* Bit Mnemonics */
 
-/* configuratio nregister */
+/* configuration register */
 #define MASK_RX_DR  6
 #define MASK_TX_DS  5
 #define MASK_MAX_RT 4
@@ -84,6 +87,9 @@
 
 /* setup of address width */
 #define AW          0 /* 2 bits */
+#define AW_3BYTES	1
+#define AW_4BYTES	2
+#define AW_5BYTES	3
 
 /* setup of auto re-transmission */
 #define ARD         4 /* 4 bits */
