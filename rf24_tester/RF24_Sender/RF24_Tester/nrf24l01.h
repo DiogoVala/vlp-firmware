@@ -13,6 +13,10 @@
 #define nrf24_ADDR_LEN 5
 #define nrf24_CONFIG ((1<<EN_CRC)|(0<<CRCO))
 
+/* Misc. Messages */
+#define NRF24_DATA_AVAILABLE 1
+#define NRF24_DATA_UNAVAILABLE 0
+
 /* Error codes */
 #define NRF24_TRANSMISSON_OK 0
 #define NRF24_MESSAGE_LOST   1
@@ -51,9 +55,9 @@ uint8_t nrf24_lastMessageStatus();
 uint8_t nrf24_retransmissionCount();
 
 /* power management */
-void    nrf24_powerUpRx();
-void    nrf24_powerUpTx();
-void    nrf24_powerDown();
+void nrf24_powerUpRx();
+void nrf24_powerUpTx();
+void nrf24_powerDown();
 
 /* low level interface ... */
 void nrf24_transmitSync(uint8_t* dataout,uint8_t len);

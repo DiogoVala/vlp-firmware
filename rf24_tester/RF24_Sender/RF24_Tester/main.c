@@ -44,14 +44,6 @@ int main(void)
 		sprintf(buf, "\rTry %d ... ", (int)try++);
 		//uart_puts(buf);
 		nrf24_send(command, sizeof(command));
-		//tx_result=nrf24_wait_tx_result();
-		/*
-		if(tx_result)
-			uart_puts(" Message lost.");
-		else {
-			uart_puts(" Message sent.");
-			break;
-		}
-		*/
+		
     }
 }

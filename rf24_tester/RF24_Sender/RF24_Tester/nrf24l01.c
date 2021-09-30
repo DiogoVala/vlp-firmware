@@ -73,9 +73,6 @@ void nrf24_config(uint8_t channel, uint8_t pay_length)
 	// Auto retransmit delay: 1000 us and Up to 15 retransmit trials
 	//nrf24_configRegister(SETUP_RETR,(0x04<<ARD)|(0x0F<<ARC));
 
-	// Dynamic length configurations: No dynamic length
-	nrf24_configRegister(DYNPD,(0<<DPL_P0)|(0<<DPL_P1)|(0<<DPL_P2)|(0<<DPL_P3)|(0<<DPL_P4)|(0<<DPL_P5));
-	
 	// Start listening
 	nrf24_powerUpRx();
 }
@@ -83,15 +80,8 @@ void nrf24_config(uint8_t channel, uint8_t pay_length)
 /* Set the RX address */
 void nrf24_rx_address(uint8_t * adr)
 {
-	nrf24_ce_digitalWrite(LOW);
 	nrf24_writeRegister(RX_ADDR_P1,adr,nrf24_ADDR_LEN);
 	nrf24_ce_digitalWrite(HIGH);
-}
-
-/* Returns the payload length */
-uint8_t nrf24_payload_length()
-{
-	return payload_len;
 }
 
 /* Set the TX address */
@@ -102,33 +92,38 @@ void nrf24_tx_address(uint8_t* adr)
 	nrf24_writeRegister(TX_ADDR,adr,nrf24_ADDR_LEN);
 }
 
-/* Checks if data is available for reading */
-/* Returns 1 if data is ready ... */
+/* Checks if there is data in the RX FIFO  */
 uint8_t nrf24_dataReady()
 {
 	// See note in getData() function - just checking RX_DR isn't good enough
 	uint8_t status = nrf24_getStatus();
 
-	// We can short circuit on RX_DR, but if it's not set, we still need
-	// to check the FIFO for any pending packets
+	/* Check if Data Ready flag is set.*/
+	/* RX_DR just means data has arrived in the FIFO,
+	 * but we still need to verify if there is already
+	 * data in the FIFO in the occasions where RX_DR
+	 * isn't set. */
 	if ( status & (1 << RX_DR) )
 	{
-		return 1;
+		return NRF24_DATA_AVAILABLE;
 	}
-	return !nrf24_rxFifoEmpty();
+	return nrf24_rxFifoEmpty();
 }
 
-/* Checks if receive FIFO is empty or not */
+/* Checks if RX FIFO is empty or not */
 uint8_t nrf24_rxFifoEmpty()
 {
 	uint8_t fifoStatus;
 
 	nrf24_readRegister(FIFO_STATUS,&fifoStatus,1);
 	
-	return (fifoStatus & (1 << RX_EMPTY));
+	if(fifoStatus & (1 << RX_EMPTY))
+		return NRF24_DATA_UNAVAILABLE;
+	else
+		return NRF24_DATA_AVAILABLE;
 }
 
-/* Returns the length of data waiting in the RX fifo */
+/* Returns the length of data waiting in the RX FIFO */
 uint8_t nrf24_payloadLength()
 {
 	uint8_t status;
@@ -139,16 +134,17 @@ uint8_t nrf24_payloadLength()
 	return status;
 }
 
-/* Reads payload bytes into data array */
+/* Reads packet bytes into data array */
 void nrf24_getData(uint8_t * data, uint8_t * pkt_len)
 {
-	*pkt_len = nrf24_payloadLength();
+	/* Number of bytes in the RX FIFO */
+	*pkt_len = nrf24_payloadLength(); 
 	
 	/* Pull down chip select */
 	nrf24_csn_digitalWrite(LOW);
 
-	/* Send cmd to read rx payload */
-	spi_exchange( R_RX_PAYLOAD );
+	/* Send cmd to read RX payload */
+	spi_exchange(R_RX_PAYLOAD);
 	
 	/* Read payload */
 	for(uint8_t i = 0; i < *pkt_len; i++) {
@@ -162,7 +158,7 @@ void nrf24_getData(uint8_t * data, uint8_t * pkt_len)
 	nrf24_configRegister(STATUS,(1<<RX_DR));
 }
 
-/* Returns the number of retransmissions occured for the last message */
+/* Returns the number of retransmissions occurred for the last message */
 uint8_t nrf24_retransmissionCount()
 {
 	uint8_t rv;
@@ -171,9 +167,7 @@ uint8_t nrf24_retransmissionCount()
 	return rv;
 }
 
-
-// Sends a data package to the default address. Be sure to send the correct
-// amount of bytes as configured as payload on the receiver.
+/* Sends a packet of data with dynamic length */
 void nrf24_send(uint8_t* data, uint8_t pkt_len)
 {
 	/* Go to Standby-I first */
@@ -198,8 +192,9 @@ void nrf24_send(uint8_t* data, uint8_t pkt_len)
 
 	/* Start the transmission */
 	nrf24_ce_digitalWrite(HIGH);
+	
 }
-
+#if 0
 uint8_t nrf24_isSending()
 {
 	uint8_t status;
@@ -207,16 +202,16 @@ uint8_t nrf24_isSending()
 	/* read the current status */
 	status = nrf24_getStatus();
 	
-	/* if sending successful (TX_DS) or max retries exceded (MAX_RT). */
-	if((status & ((1 << TX_DS)  | (1 << MAX_RT))))
+	/* if sending successful (TX_DS) or max retries exceeded (MAX_RT). */
+	if(status & ((1 << TX_DS)))
 	{
-		return 0; /* false */
+		return 1; 
 	}
-
-	return 1; /* true */
-
+	return 0;
 }
+#endif
 
+/* Get status register data */
 uint8_t nrf24_getStatus()
 {
 	uint8_t rv;
@@ -226,63 +221,44 @@ uint8_t nrf24_getStatus()
 	return rv;
 }
 
-uint8_t nrf24_lastMessageStatus()
-{
-	uint8_t rv;
-
-	rv = nrf24_getStatus();
-
-	/* Transmission went OK */
-	if((rv & ((1 << TX_DS))))
-	{
-		return NRF24_TRANSMISSON_OK;
-	}
-	/* Maximum retransmission count is reached */
-	/* Last message probably went missing ... */
-	else if((rv & ((1 << MAX_RT))))
-	{
-		return NRF24_MESSAGE_LOST;
-	}
-	/* Probably still sending ... */
-	else
-	{
-		return 0xFF;
-	}
-}
-
+/* Set chip as emitter */
 void nrf24_powerUpRx()
 {
+	/* Flush FIFO */
 	nrf24_csn_digitalWrite(LOW);
 	spi_exchange(FLUSH_RX);
 	nrf24_csn_digitalWrite(HIGH);
 
+	/* Reset Status register */
 	nrf24_configRegister(STATUS,(1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));
 
-	nrf24_ce_digitalWrite(LOW);
+	/* Config RF24 as Emitter */
+	nrf24_ce_digitalWrite(LOW); 
 	nrf24_configRegister(CONFIG,nrf24_CONFIG|((1<<PWR_UP)|(1<<PRIM_RX)));
 	nrf24_ce_digitalWrite(HIGH);
 }
 
+/* Set chip as receiver */
 void nrf24_powerUpTx()
 {
+	/* Reset Status register */
 	nrf24_configRegister(STATUS,(1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));
 
+	/* Config RF24 as Transmitter */
 	nrf24_configRegister(CONFIG,nrf24_CONFIG|((1<<PWR_UP)|(0<<PRIM_RX)));
 }
 
+/* Set chip as idle */
 void nrf24_powerDown()
 {
 	nrf24_ce_digitalWrite(LOW);
 	nrf24_configRegister(CONFIG,nrf24_CONFIG);
 }
 
-
 /* send and receive multiple bytes over SPI */
 void nrf24_transferSync(uint8_t* dataout,uint8_t* datain,uint8_t len)
 {
-	uint8_t i;
-
-	for(i=0;i<len;i++)
+	for(uint8_t i=0; i<len; i++)
 	{
 		datain[i] = spi_exchange(dataout[i]);
 	}
@@ -292,15 +268,10 @@ void nrf24_transferSync(uint8_t* dataout,uint8_t* datain,uint8_t len)
 /* send multiple bytes over SPI */
 void nrf24_transmitSync(uint8_t* dataout,uint8_t len)
 {
-	//uint8_t buf[2];
-	//uart_puts("\r\n");
-	for(uint8_t i=0; i<len ;i++)
+	for(uint8_t i=0; i<len; i++)
 	{
 		spi_exchange(dataout[i]);
-		//sprintf(buf, "%d, ", dataout[i]);
-		//uart_puts(buf);
 	}
-
 }
 
 /* Clocks only one byte into the given nrf24 register */
@@ -313,20 +284,20 @@ void nrf24_configRegister(uint8_t reg, uint8_t value)
 }
 
 /* Read single register from nrf24 */
-void nrf24_readRegister(uint8_t reg, uint8_t* value, uint8_t len)
+void nrf24_readRegister(uint8_t reg, uint8_t* data, uint8_t len)
 {
 	nrf24_csn_digitalWrite(LOW);
 	spi_exchange(R_REGISTER | (REGISTER_MASK & reg));
-	nrf24_transferSync(value,value,len);
+	nrf24_transferSync(data,data,len);
 	nrf24_csn_digitalWrite(HIGH);
 }
 
 /* Write to a single register of nrf24 */
-void nrf24_writeRegister(uint8_t reg, uint8_t* value, uint8_t len)
+void nrf24_writeRegister(uint8_t reg, uint8_t* data, uint8_t len)
 {
 	nrf24_csn_digitalWrite(LOW);
 	spi_exchange(W_REGISTER | (REGISTER_MASK & reg));
-	nrf24_transmitSync(value,len);
+	nrf24_transmitSync(data,len);
 	nrf24_csn_digitalWrite(HIGH);
 }
 

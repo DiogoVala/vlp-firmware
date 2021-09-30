@@ -13,6 +13,10 @@
 #define nrf24_ADDR_LEN 5
 #define nrf24_CONFIG ((1<<EN_CRC)|(0<<CRCO))
 
+/* Misc. Messages */
+#define NRF24_DATA_AVAILABLE 1
+#define NRF24_DATA_UNAVAILABLE 0
+
 /* Error codes */
 #define NRF24_TRANSMISSON_OK 0
 #define NRF24_MESSAGE_LOST   1
@@ -28,10 +32,10 @@
 #define HIGH 1
 
 /* adjustment functions */
-void    nrf24_init();
-void    nrf24_rx_address(uint8_t* adr);
-void    nrf24_tx_address(uint8_t* adr);
-void    nrf24_config(uint8_t channel, uint8_t pay_length);
+void nrf24_init();
+void nrf24_rx_address(uint8_t* adr);
+void nrf24_tx_address(uint8_t* adr);
+void nrf24_config(uint8_t channel, uint8_t pay_length);
 
 /* state check functions */
 uint8_t nrf24_dataReady();
@@ -40,7 +44,7 @@ uint8_t nrf24_getStatus();
 uint8_t nrf24_rxFifoEmpty();
 
 /* core TX / RX functions */
-void nrf24_send(uint8_t* value);
+void nrf24_send(uint8_t* data, uint8_t pkt_len);
 void nrf24_getData(uint8_t * data, uint8_t * pkt_len);
 
 /* use in dynamic length mode */
