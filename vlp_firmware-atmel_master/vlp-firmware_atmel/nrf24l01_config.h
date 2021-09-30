@@ -24,6 +24,12 @@
     $Id$
 */
 
+/* Base configuration for all modes */
+#define nrf24_CONFIG ((1<<EN_CRC)|(0<<CRCO))
+
+/* Maximum number of bytes per payload */
+#define NRF24_MAX_PAYLOAD 32
+
 /* Memory Map */
 #define CONFIG      0x00
 #define EN_AA       0x01
@@ -50,10 +56,11 @@
 #define RX_PW_P5    0x16
 #define FIFO_STATUS 0x17
 #define DYNPD       0x1C
+#define FEATURE	    0x1D
 
 /* Bit Mnemonics */
 
-/* configuratio nregister */
+/* configuration register */
 #define MASK_RX_DR  6
 #define MASK_TX_DS  5
 #define MASK_MAX_RT 4
@@ -61,6 +68,9 @@
 #define CRCO        2
 #define PWR_UP      1
 #define PRIM_RX     0
+#define EN_DPL	    2
+#define EN_ACK_PAY  1
+#define EN_DYN_ACK  0
 
 /* enable auto acknowledgment */
 #define ENAA_P5     5
@@ -80,6 +90,9 @@
 
 /* setup of address width */
 #define AW          0 /* 2 bits */
+#define AW_3BYTES	1
+#define AW_4BYTES	2
+#define AW_5BYTES	3
 
 /* setup of auto re-transmission */
 #define ARD         4 /* 4 bits */
@@ -128,3 +141,10 @@
 #define ACTIVATE      0x50 
 #define R_RX_PL_WID   0x60
 #define NOP           0xFF
+
+/* P model bit Mnemonics */
+#define RF_DR_LOW   5
+#define RF_DR_HIGH  3
+#define RF_PWR_HIGH 2
+#define RF_PWR_LOW  1
+

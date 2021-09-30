@@ -113,6 +113,12 @@
     <Compile Include="communication.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="eeprom.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="eeprom.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="led.c">
       <SubType>compile</SubType>
     </Compile>
@@ -129,6 +135,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="nrf24l01_config.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="spi.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="spi.h">

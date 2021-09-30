@@ -21,6 +21,7 @@
 #include "uart.h"
 #include "config.h"
 #include "communication.h"
+#include "eeprom.h"
 
 /* Max number of chars to read from terminal */
 #define INPUT_BUFFER_SIZE 100
@@ -32,6 +33,9 @@
 static uint8_t bitstream[BITSTREAM_MAX_BITS];
 
 int main() {
+	
+	uint8_t TX_addr[nrf24_ADDR_WIDTH];
+	uint8_t RX_addr[nrf24_ADDR_WIDTH];
 	
 	led_t led; /* LED object */
 	
@@ -50,9 +54,15 @@ int main() {
 	uart_puts("\n\x1b[2J\r"); /*Clear screen */
 	uart_puts("\r\nInitializing MASTER.");
 	
-	spi_master_init();
+	spi_init();
 	
-	nrf24_init();
+	for(uint8_t i=0; i<nrf24_ADDR_WIDTH; i++){
+		RX_addr[i]=eeprom_read(EEPROM_IDX_RX_ADDR+i);
+		TX_addr[i]=eeprom_read(EEPROM_IDX_TX_ADDR+i);
+	}
+	
+	nrf24_config(RX_addr, TX_addr);
+	uart_puts("\r\nRF24 init.");
 	
     uart_puts("\r\n\nWaiting command input.");
     uart_puts("\r\n($ID,State,Mode,Intensity,Freq,Duty,*)");

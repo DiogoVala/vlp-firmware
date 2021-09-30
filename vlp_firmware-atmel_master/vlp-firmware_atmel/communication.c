@@ -21,13 +21,15 @@
 #include "nrf24l01.h"
 #include "uart.h"
 
-uint8_t TX_command_array[COMMAND_LENGTH] = {}; /* Bytes to transmit go here */
-uint8_t ACK_Array[COMMAND_LENGTH] = {}; /* Received ACK message goes here */
-uint8_t bitstream_byte_array[COMMAND_LENGTH] = {0}; /* Bitstream bits are stored here in the form of bytes before transmitting */
+/* Debug mode */
+#define DEBUG_COMM true
+
+uint8_t TX_command_array[NRF24_MAX_PAYLOAD] = {}; /* Bytes to transmit go here */
+uint8_t ACK_Array[NRF24_MAX_PAYLOAD] = {}; /* Received ACK message goes here */
+uint8_t bitstream_byte_array[NRF24_MAX_PAYLOAD] = {0}; /* Bitstream bits are stored here in the form of bytes before transmitting */
 static volatile uint8_t byte_count = 0; /* Number of bytes needed to store the bitstream before transmitting */ 
 
 /* Prototypes of private functions */
-void sendAndWaitACK();
 void buildLEDCommand(led_t* ledp);
 void updateBitstream();
 void updateLED(led_t* ledp);
@@ -69,12 +71,12 @@ void sendBitStream(uint8_t bitstream[], uint8_t bitstreamSize, led_t* ledp) {
 		for(uint8_t id=0; id<=MAX_LUMINARIES; id++)
 		{
 			TX_command_array[ID]=id;
-			sendAndWaitACK(); 
+			nrf24_sendData(TX_command_array, BITSTREAM + byte_count); 
 		}
 	}
 	else
 	{
-		sendAndWaitACK();
+		nrf24_sendData(TX_command_array, BITSTREAM + byte_count);
 	}
 }
 
@@ -83,6 +85,15 @@ void sendCommand(led_t* ledp) {
 	
 	uart_puts("\r\nSending Command... ");
 	buildLEDCommand(ledp);
+	
+	#if DEBUG_COMM
+	uart_puts("\r\nCommand: ");
+	uint8_t buf[50];
+	for (uint8_t i = 0; i <= COMMAND_LENGTH; i++) {
+		sprintf(buf, "0x%x, ", TX_command_array[i]);
+		uart_puts(buf);
+	}
+	#endif
 
 	/* If ID is 255, send to all luminaries */
 	if(TX_command_array[ID]==BROADCAST)
@@ -90,50 +101,13 @@ void sendCommand(led_t* ledp) {
 		for(uint8_t id=0; id<MAX_LUMINARIES; id++)
 		{
 			TX_command_array[ID]=id;
-			sendAndWaitACK();
+			nrf24_sendData(TX_command_array, COMMAND_LENGTH);
 		}
 	}
 	else
 	{
-		sendAndWaitACK();
+		nrf24_sendData(TX_command_array, COMMAND_LENGTH);
 	}
-}
-
-/* Sends command array and waits for a ACK reply */
-void sendAndWaitACK(){
-	bool ack=false;
-	uint16_t ACK_tries=0;
-	uint16_t TX_tries=0;
-	
-	while(ack==false && TX_tries++ < MAX_TX_RETRIES) /* Send again if not ack not received */
-	{
-		nrf24_send(TX_command_array);
-		_delay_ms(5);
-		
-		while(ack==false && ACK_tries++ < MAX_ACK_RX_RETRIES) /* Wait for Ack */
-		{
-			nrf24_getData(ACK_Array);
-			if(ACK_Array[ID]==TX_command_array[ID] && ACK_Array[IDENTIFIER]=='A')
-			{
-				ack=true;
-			}
-		}
-		ACK_tries=0;
-	}
-
-	#if DEBUG_COMM
-		uint8_t message_string[100]={};
-		if(ack)
-		{
-			sprintf(message_string, "\r\nCommand sent to luminary %03d. ACK received.\r\n", TX_command_array[ID]);
-			uart_puts(message_string);
-		}
-		else
-		{
-			sprintf(message_string, "\r\nCommand sent to luminary %03d. ACK failed.\r\n", TX_command_array[ID]);
-			uart_puts(message_string);
-		}
-	#endif
 }
 
 /* Builds the command array with the led params to send via RF */
@@ -148,7 +122,8 @@ void buildLEDCommand(led_t* ledp) {
     TX_command_array[INTENSITY] = getLedIntensity(ledp);
     TX_command_array[FREQUENCY_LB] = (uint8_t) (getLedFrequency(ledp) & 0x00FF);
     TX_command_array[FREQUENCY_HB] = (uint8_t) ((getLedFrequency(ledp) >> 8 ) & 0x00FF);
-    TX_command_array[DUTYCYCLE] = getLedDutyCycle(ledp);	
+    TX_command_array[DUTYCYCLE] = getLedDutyCycle(ledp);
+	
 }
 
 /* Transforms an array of bits into an array of bytes */
