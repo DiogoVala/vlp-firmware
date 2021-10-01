@@ -29,8 +29,8 @@ void nrf24_config(uint8_t *TX_addr, uint8_t *RX_addr)
 	nrf24_configRegister(SETUP_AW, (nrf24_ADDR_WIDTH-2) << AW);
 
 	/* Config addresses */
-	nrf24_tx_address(TX_addr);
-	nrf24_rx_address(RX_addr);
+	nrf24_set_TX_address(TX_addr);
+	nrf24_set_RX_address(RX_addr);
 	
 	/* Initialize pins */
 	nrf24_ce_digitalWrite(LOW);
@@ -63,18 +63,30 @@ void nrf24_config(uint8_t *TX_addr, uint8_t *RX_addr)
 }
 
 /* Set the RX address */
-void nrf24_rx_address(uint8_t* adr)
+void nrf24_set_RX_address(uint8_t* adr)
 {
 	nrf24_writeRegister(RX_ADDR_P1,adr,nrf24_ADDR_WIDTH);
 	nrf24_ce_digitalWrite(HIGH);
 }
 
+/* Get the RX address */
+void nrf24_get_RX_address(uint8_t* adr)
+{
+	nrf24_readRegister(RX_ADDR_P1,adr,nrf24_ADDR_WIDTH);
+}
+
 /* Set the TX address */
-void nrf24_tx_address(uint8_t* adr)
+void nrf24_set_TX_address(uint8_t* adr)
 {
 	/* RX_ADDR_P0 must be set to the sending addr for auto ack to work. */
 	nrf24_writeRegister(RX_ADDR_P0,adr,nrf24_ADDR_WIDTH);
 	nrf24_writeRegister(TX_ADDR,adr,nrf24_ADDR_WIDTH);
+}
+
+/* Get the TX address */
+void nrf24_get_TX_address(uint8_t* adr)
+{
+	nrf24_readRegister(TX_ADDR,adr,nrf24_ADDR_WIDTH);
 }
 
 /* Checks if there is data in the RX FIFO  */

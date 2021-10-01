@@ -56,8 +56,9 @@ void checkRF(led_t* ledp) {
 	
 	if(RX_command_array[0]==0xff)
 	{
-		wdt_enable(WDTO_15MS);
-		while(1);
+		uart_puts("\r\nSlave would reset now.");
+		//wdt_enable(WDTO_15MS);
+		//while(1);
 	}
 	
 	#if DEBUG_COMM 

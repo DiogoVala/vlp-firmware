@@ -31,8 +31,10 @@
 
 /* Setup functions */
 void nrf24_config(uint8_t TX_addr[nrf24_ADDR_WIDTH], uint8_t RX_addr[nrf24_ADDR_WIDTH]);
-void nrf24_rx_address(uint8_t* adr);
-void nrf24_tx_address(uint8_t* adr);
+void nrf24_set_RX_address(uint8_t* adr);
+void nrf24_get_RX_address(uint8_t* adr);
+void nrf24_set_TX_address(uint8_t* adr);
+void nrf24_get_TX_address(uint8_t* adr);
 
 /* Core TX / RX functions */
 void nrf24_sendData(uint8_t* data, uint8_t pkt_len);

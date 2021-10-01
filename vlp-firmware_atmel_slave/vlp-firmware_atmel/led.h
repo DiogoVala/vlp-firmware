@@ -14,8 +14,6 @@
 
 #include <stdint.h>
 
-#define LED_HW_ID 1 /* Physical ID of this LED*/
-
 /* General defs */
 #define LED_ON 1
 #define LED_OFF 0
@@ -48,7 +46,7 @@ typedef struct {
 } led_t;
 
 
-void initLEDObject(led_t *ledp);
+void initLEDObject(led_t *ledp, uint8_t LED_HW_ID);
 
 uint8_t getLedID(led_t *ledp);
 
