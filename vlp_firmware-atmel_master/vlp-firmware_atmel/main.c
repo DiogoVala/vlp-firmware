@@ -34,8 +34,8 @@ static uint8_t bitstream[BITSTREAM_MAX_BITS];
 
 int main() {
 	
-	uint8_t TX_addr[nrf24_ADDR_WIDTH];
-	uint8_t RX_addr[nrf24_ADDR_WIDTH];
+	uint8_t TX_addr[nrf24_ADDR_WIDTH]={'L', 'M', '0'};
+	uint8_t RX_addr[nrf24_ADDR_WIDTH]={'M', 'T', 'R'};
 	
 	led_t led; /* LED object */
 	
@@ -55,11 +55,6 @@ int main() {
 	uart_puts("\r\nInitializing MASTER.");
 	
 	spi_init();
-	
-	for(uint8_t i=0; i<nrf24_ADDR_WIDTH; i++){
-		RX_addr[i]=eeprom_read(EEPROM_IDX_RX_ADDR+i);
-		TX_addr[i]=eeprom_read(EEPROM_IDX_TX_ADDR+i);
-	}
 	
 	nrf24_config(RX_addr, TX_addr);
 	uart_puts("\r\nRF24 init.");
@@ -94,6 +89,8 @@ int main() {
                         /*NOTE: THERE IS NO VERIFICATION OF INPUTS */
                     case 0:
                         setLedID(&led, (uint8_t) atoi((char*) msgBuffer));
+						TX_addr[2]=led.ledID;
+						nrf24_tx_address(TX_addr);
                         break;
                     case 1:
                         setLedState(&led, (uint8_t) atoi((char*) msgBuffer));
