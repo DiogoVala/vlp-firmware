@@ -50,7 +50,6 @@ void sendBitStream(uint8_t bitstream[], uint8_t bitstreamSize, led_t* ledp) {
     TX_command_array[ID] = ledp->ledID;  
     TX_command_array[IDENTIFIER] = BITSTREAM_IDENTIFIER; /* To indicate bitstream instead of normal command */
     TX_command_array[BIT_COUNT] = bitstreamSize; /* Number of bits in the bitstream, so the slave knows how many to read */
-    
 	/* Fill the rest with bytes containing the bitstream */
 	for (uint8_t i = BITSTREAM; i < (BITSTREAM + byte_count); i++) {
         TX_command_array[i] = bitstream_byte_array[i - BITSTREAM];
@@ -89,10 +88,11 @@ void sendCommand(led_t* ledp) {
 	#if DEBUG_COMM
 	uart_puts("\r\nCommand: ");
 	uint8_t buf[50];
-	for (uint8_t i = 0; i <= COMMAND_LENGTH; i++) {
+	for (uint8_t i = 0; i <= SIZE_OF_COMMAND; i++) {
 		sprintf(buf, "0x%x, ", TX_command_array[i]);
 		uart_puts(buf);
 	}
+	uart_puts("\r\n");
 	#endif
 
 	/* If ID is 255, send to all luminaries */
@@ -101,19 +101,20 @@ void sendCommand(led_t* ledp) {
 		for(uint8_t id=0; id<MAX_LUMINARIES; id++)
 		{
 			TX_command_array[ID]=id;
-			nrf24_sendData(TX_command_array, COMMAND_LENGTH);
+			nrf24_sendData(TX_command_array, SIZE_OF_COMMAND);
 		}
 	}
 	else
 	{
-		nrf24_sendData(TX_command_array, COMMAND_LENGTH);
+		nrf24_sendData(TX_command_array, SIZE_OF_COMMAND);
 	}
+	nrf24_print_info();
 }
 
 /* Builds the command array with the led params to send via RF */
 void buildLEDCommand(led_t* ledp) {
 	
-	memset(TX_command_array, '\0', COMMAND_LENGTH);
+	memset(TX_command_array, '\0', SIZE_OF_COMMAND);
 	
     /* Array of bytes to send to RF module */
     TX_command_array[ID] = getLedID(ledp);

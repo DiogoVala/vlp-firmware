@@ -36,7 +36,8 @@ enum command_params {
     INTENSITY,
     FREQUENCY_LB,
     FREQUENCY_HB,
-    DUTYCYCLE
+    DUTYCYCLE,
+	SIZE_OF_COMMAND
 };
 
 enum bitstream_params {

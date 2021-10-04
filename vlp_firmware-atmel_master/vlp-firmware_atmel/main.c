@@ -34,7 +34,7 @@ static uint8_t bitstream[BITSTREAM_MAX_BITS];
 
 int main() {
 	
-	uint8_t TX_addr[nrf24_ADDR_WIDTH]={'L', 'M', '0'};
+	uint8_t TX_addr[nrf24_ADDR_WIDTH]={'L', 'M', '1'};
 	uint8_t RX_addr[nrf24_ADDR_WIDTH]={'M', 'T', 'R'};
 	
 	led_t led; /* LED object */
@@ -56,7 +56,7 @@ int main() {
 	
 	spi_init();
 	
-	nrf24_config(RX_addr, TX_addr);
+	nrf24_config(TX_addr, RX_addr);
 	uart_puts("\r\nRF24 init.");
 	
     uart_puts("\r\n\nWaiting command input.");
@@ -90,7 +90,7 @@ int main() {
                     case 0:
                         setLedID(&led, (uint8_t) atoi((char*) msgBuffer));
 						TX_addr[2]=led.ledID;
-						nrf24_tx_address(TX_addr);
+						nrf24_set_TX_address(TX_addr);
                         break;
                     case 1:
                         setLedState(&led, (uint8_t) atoi((char*) msgBuffer));
