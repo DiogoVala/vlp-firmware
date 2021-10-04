@@ -126,11 +126,6 @@ int main() {
 	}
 	#endif
 	
-	uint8_t buf[10]={0};
-		
-	sprintf(buf, "0x%x", SPI_DDR);
-	uart_puts(buf);
-
 	nrf24_config(TX_addr, RX_addr);
 	uart_puts("\r\nRF24 init.");
 	

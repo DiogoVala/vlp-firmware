@@ -88,7 +88,7 @@ void sendCommand(led_t* ledp) {
 	#if DEBUG_COMM
 	uart_puts("\r\nCommand: ");
 	uint8_t buf[50];
-	for (uint8_t i = 0; i <= SIZE_OF_COMMAND; i++) {
+	for (uint8_t i = 0; i <= SIZE_OF_COMMAND-1; i++) {
 		sprintf(buf, "0x%x, ", TX_command_array[i]);
 		uart_puts(buf);
 	}
@@ -107,6 +107,10 @@ void sendCommand(led_t* ledp) {
 	else
 	{
 		nrf24_sendData(TX_command_array, SIZE_OF_COMMAND);
+		if(nrf24_wait_tx_result()==NRF24_MESSAGE_SENT)
+			uart_puts("\r\nMessage sent and acknowledged");
+		else
+			uart_puts("\r\nMessage not acknowledged");
 	}
 	nrf24_print_info();
 }

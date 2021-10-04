@@ -46,7 +46,7 @@ void nrf24_config(uint8_t *TX_addr, uint8_t *RX_addr)
 	nrf24_configRegister(RF_CH, NRF24_CHANNEL);
 
 	/* Dynamic payload length for TX & RX (pipes 0 and 1) */
-	nrf24_configRegister(DYNPD,(1<<DPL_P0)|(1<<DPL_P1));
+	nrf24_configRegister(DYNPD,(1<<DPL_P0)|(1<<DPL_P1)|(0<<DPL_P2)|(0<<DPL_P3)|(0<<DPL_P4)|(0<<DPL_P5));
 	nrf24_configRegister(FEATURE, 1 << EN_DPL);
 	
 	// 2 Mbps, TX gain: 0dbm
@@ -61,8 +61,11 @@ void nrf24_config(uint8_t *TX_addr, uint8_t *RX_addr)
 	// Auto retransmit delay: 2000 us and Up to 15 retransmit trials
 	nrf24_configRegister(SETUP_RETR,(0x07<<ARD)|(0x0F<<ARC));
 	
+	// Enable RX addresses for now
+	nrf24_configRegister(EN_RXADDR,(1<<ERX_P0)|(1<<ERX_P1)|(0<<ERX_P2)|(0<<ERX_P3)|(0<<ERX_P4)|(0<<ERX_P5));
+	
 	/* Reset status bits */
-	nrf24_configRegister(STATUS, (1 << RX_DR) | (1 << TX_DS) | (1 << MAX_RT));
+	//nrf24_configRegister(STATUS, (1 << RX_DR) | (1 << TX_DS) | (1 << MAX_RT));
 
 	// Start listening
 	nrf24_powerUpRx();
@@ -71,11 +74,7 @@ void nrf24_config(uint8_t *TX_addr, uint8_t *RX_addr)
 /* Set the RX address */
 void nrf24_set_RX_address(uint8_t* adr)
 {
-	nrf24_ce_digitalWrite(LOW);
-
 	nrf24_writeRegister(RX_ADDR_P1,adr,nrf24_ADDR_WIDTH);
-
-	nrf24_ce_digitalWrite(HIGH);
 }
 
 /* Get the RX address */
@@ -88,11 +87,9 @@ void nrf24_get_RX_address(uint8_t* adr)
 void nrf24_set_TX_address(uint8_t* adr)
 {
 	nrf24_ce_digitalWrite(LOW);
-
 	/* The pipe 0 address is the address we listen on for ACKs */
 	nrf24_writeRegister(RX_ADDR_P0,adr,nrf24_ADDR_WIDTH);
 	nrf24_writeRegister(TX_ADDR,adr,nrf24_ADDR_WIDTH);
-
 	nrf24_ce_digitalWrite(HIGH);
 }
 
@@ -255,9 +252,8 @@ uint8_t nrf24_retransmissionCount()
 /* Set chip as receiver */
 void nrf24_powerUpRx()
 {
-	
 	// Use Pipe 1 to receive data. Pipe 0 is for transmitting ACKs
-	nrf24_configRegister(EN_RXADDR,(1<<ERX_P1)|(0<<ERX_P0));
+	//nrf24_configRegister(EN_RXADDR,(1<<ERX_P1)|(0<<ERX_P0));
 	
 	/* Flush RX FIFO */
 	nrf24_csn_digitalWrite(LOW);
@@ -278,7 +274,7 @@ void nrf24_powerUpTx()
 {
 
 	// Use Pipe 0 to receive ACKs
-	nrf24_configRegister(EN_RXADDR,(0<<ERX_P1)|(1<<ERX_P0));
+	//nrf24_configRegister(EN_RXADDR,(0<<ERX_P1)|(1<<ERX_P0));
 	
 	/* Flush TX FIFO */
 	nrf24_csn_digitalWrite(LOW);
@@ -316,18 +312,20 @@ void nrf24_configRegister(uint8_t reg, uint8_t data)
 /* Read n bytes from nrf24 register */
 void nrf24_readRegister(uint8_t reg, uint8_t* data, uint8_t n)
 {
+	uint8_t dummy[32]={0};
 	nrf24_csn_digitalWrite(LOW);
 	spi_exchange(R_REGISTER | (REGISTER_MASK & reg));
-	spi_exchange_n(data,data,n);
+	spi_exchange_n(data,dummy,n);
 	nrf24_csn_digitalWrite(HIGH);
 }
 
 /* Write n bytes to nrf24 register */
 void nrf24_writeRegister(uint8_t reg, uint8_t* data, uint8_t n)
 {
+	uint8_t dummy[32];
 	nrf24_csn_digitalWrite(LOW);
 	spi_exchange(W_REGISTER | (REGISTER_MASK & reg));
-	spi_exchange_n(data,0,n);
+	spi_exchange_n(dummy,data,n);
 	nrf24_csn_digitalWrite(HIGH);
 }
 

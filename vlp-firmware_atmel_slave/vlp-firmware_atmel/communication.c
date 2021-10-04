@@ -47,10 +47,12 @@ void checkRF(led_t* ledp) {
 	
 	uint8_t data_len=0;
 
+	/*
     while (nrf24_dataReady() == NRF24_DATA_UNAVAILABLE){ // Wait for message
 		wdt_reset();
 	}
-	
+	*/
+
 	if(nrf24_dataReady() == NRF24_DATA_AVAILABLE){
 	
 		cli();

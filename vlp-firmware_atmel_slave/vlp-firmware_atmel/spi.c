@@ -22,7 +22,7 @@ uint8_t spi_exchange(uint8_t data) {
 void spi_exchange_n(uint8_t* dataout,uint8_t* datain,uint8_t len) {
 	for(uint8_t i=0; i<len; i++)
 	{
-		datain[i] = spi_exchange(dataout[i]);
+		dataout[i] = spi_exchange(datain[i]);
 	}
 }
 
