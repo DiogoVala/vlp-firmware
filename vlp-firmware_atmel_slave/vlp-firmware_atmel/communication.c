@@ -40,6 +40,7 @@ void updateLED(led_t* ledp);
 void byteArrayToBits(uint8_t byte_array[], uint8_t bitstreamSize);
 void bitsToByteArray(uint8_t bitstream[], uint8_t bitstreamSize);
 bool isCommandValid();
+bool isReset();
 
 /* Checks the RF module for new data and processes it */
 void checkRF(led_t* ledp) {
@@ -49,56 +50,74 @@ void checkRF(led_t* ledp) {
     while (nrf24_dataReady() == NRF24_DATA_UNAVAILABLE){ // Wait for message
 		wdt_reset();
 	}
-    cli();
-
-	memset(RX_command_array, '\0', sizeof(RX_command_array));
-    nrf24_getData(RX_command_array, &data_len); /* Store received bytes command array */
 	
-	if(RX_command_array[0]==0xff)
-	{
-		uart_puts("\r\nSlave would reset now.");
-		//wdt_enable(WDTO_15MS);
-		//while(1);
-	}
+	if(nrf24_dataReady() == NRF24_DATA_AVAILABLE){
 	
-	#if DEBUG_COMM 
-		uint8_t buf[10]={0};
-		uart_puts("\r\nReceived data:\r\n");
-		for (uint8_t i=0; i<data_len; i++)
+		cli();
+	
+		memset(RX_command_array, '\0', sizeof(RX_command_array));
+		nrf24_getData(RX_command_array, &data_len); /* Store received bytes command array */
+	
+		if(isReset())
 		{
-			sprintf(buf, "0x%x, ", RX_command_array[i]);
-			uart_puts(buf);
+			uart_puts("\r\nSlave would reset now.");
+			//wdt_enable(WDTO_15MS);
+			//while(1);
 		}
-		uart_puts("\r\n");
-	#endif
 	
-    /* Evaluate data*/
-    if (RX_command_array[ID] == ledp->ledID) { /* If command concerns this luminary */
-        if (RX_command_array[IDENTIFIER] == BITSTREAM_IDENTIFIER) /* Bitstream received */ {
+		#if DEBUG_COMM 
+			uint8_t buf[10]={0};
+			uart_puts("\r\nReceived data:\r\n");
+			sprintf(buf, "Size: %d\r\n", data_len);
+			uart_puts(buf);
+			for (uint8_t i=0; i<data_len; i++)
+			{
+				sprintf(buf, "0x%x, ", RX_command_array[i]);
+				uart_puts(buf);
+			}
+			uart_puts("\r\n");
+		#endif
+	
+		/* Evaluate data*/
+		if (RX_command_array[ID] == ledp->ledID) { /* If command concerns this luminary */
+			if (RX_command_array[IDENTIFIER] == BITSTREAM_IDENTIFIER) /* Bitstream received */ {
            
-		    updateBitstream();
+				updateBitstream();
             
-            #if DEBUG_COMM
-            uart_puts("\r\nBitstream received.\r\n");
-            for(uint8_t i=0; i<bitstreamSize; i++)
-            {
-	            sprintf(buf, "%d, ", bitstream[i]);
-	            uart_puts(buf);
-            }
-            #endif
-        }
-        else /* Command received */ 
-		{
-			if(isCommandValid()){
-				updateLED(ledp); /* Update LED with new parameters */
-				
 				#if DEBUG_COMM
-				uart_puts("\r\nCommand received.");
+				uart_puts("\r\nBitstream received.\r\n");
+				for(uint8_t i=0; i<bitstreamSize; i++)
+				{
+					sprintf(buf, "%d, ", bitstream[i]);
+					uart_puts(buf);
+				}
 				#endif
 			}
-        }
-    }
-    sei();
+			else /* Command received */ 
+			{
+				if(isCommandValid()){
+					updateLED(ledp); /* Update LED with new parameters */
+				
+					#if DEBUG_COMM
+					uart_puts("\r\nCommand received.");
+					#endif
+				}
+			}
+		}
+		sei();
+	}
+}
+
+bool isReset() {
+	bool reset = true;
+	static uint8_t reset_cmd[]={'R', 'E', 'S', 'E', 'T'};
+		
+	for(uint8_t i=0; i<sizeof(reset_cmd); i++)
+	{
+		if(RX_command_array[i] != reset_cmd[i])
+			reset=false;
+	}
+	return reset;
 }
 
 /* Updates bitstream array with new data from RF */
@@ -127,7 +146,8 @@ void updateLED(led_t* ledp) {
 	
 	#if DEBUG_COMM
 		uint8_t buf[100]={};
-		sprintf(buf, "\r\nState: %d\r\nMode: %s\r\nIntensity: %d\r\nFrequency: %d\r\nDuty: %d", getLedState(ledp), getLedModeVerbose(ledp), getLedIntensity(ledp), getLedFrequency(ledp), getLedDutyCycle(ledp));
+		sprintf(buf, "\r\nState: %d\r\nMode: %s\r\nIntensity: %d\r\nFrequency: %d\r\nDuty: %d", \
+		getLedState(ledp), getLedModeVerbose(ledp), getLedIntensity(ledp), getLedFrequency(ledp), getLedDutyCycle(ledp));
 		uart_puts(buf);
 	#endif
 }

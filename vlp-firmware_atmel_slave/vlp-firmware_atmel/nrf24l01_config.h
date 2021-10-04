@@ -26,6 +26,8 @@
 
 /* Base configuration for all modes */
 #define nrf24_CONFIG ((1<<EN_CRC)|(0<<CRCO))
+//#define nrf24_CONFIG ((1 << MASK_RX_DR) | (1 << MASK_TX_DS) | \
+(1 << MASK_MAX_RT) | (1 << CRCO) | (1 << EN_CRC))
 
 /* Maximum number of bytes per payload */
 #define NRF24_MAX_PAYLOAD 32
@@ -141,6 +143,7 @@
 #define ACTIVATE      0x50 
 #define R_RX_PL_WID   0x60
 #define NOP           0xFF
+#define ACTIVATION    0x73
 
 /* P model bit Mnemonics */
 #define RF_DR_LOW   5

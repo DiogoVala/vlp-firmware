@@ -113,8 +113,10 @@ int main() {
 	}
 	if(valid_eeprom){
 		uart_puts("\r\nAddresses successfully loaded from EEPROM.");
+		
 		uint8_t buf[10]={0};
 		uart_puts("\r\nRX: \r\n");
+		
 		for (uint8_t i=0; i<nrf24_ADDR_WIDTH; i++)
 		{
 			sprintf(buf, "0x%x, ", RX_command_array[i]);
@@ -124,12 +126,19 @@ int main() {
 	}
 	#endif
 	
-	nrf24_config(RX_addr, TX_addr);
+	uint8_t buf[10]={0};
+		
+	sprintf(buf, "0x%x", SPI_DDR);
+	uart_puts(buf);
+
+	nrf24_config(TX_addr, RX_addr);
 	uart_puts("\r\nRF24 init.");
 	
 	/* Initialize LED object with default parameters and LED ID */
     initLEDObject(&led, LED_HW_ID); 
 	startupLED(&led);
+	
+	nrf24_print_info();
 			
 	while (1) {
 		/* Checks for incoming messages and updates LED */
