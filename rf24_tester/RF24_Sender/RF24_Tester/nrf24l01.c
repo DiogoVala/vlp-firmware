@@ -322,6 +322,7 @@ void nrf24_ce_digitalWrite(uint8_t state)
 		_delay_us(10); /* Minimum CE High period for stuff to work */
 	}
 	else{
+		_delay_us(200); /* Minimum CE interval from last edge */
 		clr_bit(NRF24_PORT,NRF24_CE);
 	}
 }

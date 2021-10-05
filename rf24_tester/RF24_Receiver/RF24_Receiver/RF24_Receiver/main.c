@@ -26,6 +26,8 @@ volatile uint8_t rx_addr[]={0x20, 0x10, 0x05};
 volatile uint8_t tx_addr[]={0x05, 0x10, 0x20};
 
 volatile uint8_t data[32];
+volatile uint8_t data_all[1000];
+volatile uint8_t idx=0;
 volatile uint8_t data_len=0;
 
 int main(void)
@@ -52,15 +54,7 @@ int main(void)
     {
 		while(nrf24_dataReady()==NRF24_DATA_UNAVAILABLE);
 		nrf24_getData(data, &data_len);
-		
-		uart_puts("\r\nData ready: ");
-		for(uint8_t i=0; i<data_len; i++)
-		{
-			sprintf(uart_buffer, "%c ", data[i]);
-			uart_puts(uart_buffer);
-		}
-		sprintf(uart_buffer, " - %d",data_len);
-		uart_puts(uart_buffer);
-		
+		if(data_len==31)
+			uart_puts("\r\nloop");
     }
 }

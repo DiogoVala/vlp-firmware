@@ -18,6 +18,8 @@
 /* Error codes */
 #define NRF24_MESSAGE_SENT 0
 #define NRF24_MESSAGE_LOST 1
+#define NRF24_CHIP_DISCONNECTED 1
+#define NRF24_CHIP_ON 0
 
 /* NRF24 Pinout */
 #define NRF24_DDR	DDRB

@@ -7,8 +7,6 @@
 * -----------------------------------------------------------------------------
 * This library is based on this library:
 *   https://github.com/aaronds/arduino-nrf24l01
-* Which is based on this library:
-*   http://www.tinkerer.eu/AVRLib/nRF24L01
 * -----------------------------------------------------------------------------
 */
 
@@ -19,7 +17,7 @@
 #include "uart.h"
 #include <util/delay.h>
 
-static volatile uint8_t rf24_mode=MODE_IDLE;
+static volatile uint8_t rf24_mode = MODE_IDLE;
 
 /* Setup the module */
 uint8_t nrf24_config(uint8_t *TX_addr, uint8_t *RX_addr)
@@ -35,38 +33,41 @@ uint8_t nrf24_config(uint8_t *TX_addr, uint8_t *RX_addr)
 	
 	/* Address width */
 	nrf24_configRegister(SETUP_AW, (nrf24_ADDR_WIDTH-2) << AW); 
+	
+	/* Check the register we just configured */
+	uint8_t regval = nrf24_readRegister(SETUP_AW);
+	if (regval != (nrf24_ADDR_WIDTH-2) << AW)  /* There may be no nRF24 connected */
+		return NRF24_CHIP_DISCONNECTED;
 
 	/* Config addresses */
 	nrf24_tx_address(TX_addr);
 	nrf24_rx_address(RX_addr);
 	
 	// Set RF channel
-	nrf24_configRegister(RF_CH, NRF24_CHANNEL);//
+	nrf24_configRegister(RF_CH, NRF24_CHANNEL);
 
 	/* Dynamic payload length for TX & RX (pipes 0 and 1) */
 	nrf24_configRegister(DYNPD,(1<<DPL_P0)|(1<<DPL_P1)|(0<<DPL_P2)|(0<<DPL_P3)|(0<<DPL_P4)|(0<<DPL_P5));
-	nrf24_configRegister(FEATURE, 1 << EN_DPL);//
 	
-	// 250kbps, TX gain: 0dbm
+	/* Enable dynamic payload feature */
+	nrf24_configRegister(FEATURE, 1 << EN_DPL);
+	
+	/* Speed: 2mbps, TX gain: 0dbm */
 	nrf24_configRegister(RF_SETUP, (1 << RF_PWR_LOW) | (1 << RF_PWR_HIGH) | (0 << RF_DR_LOW) | (1 << RF_DR_HIGH));
 
-	// Enable ACKing on pipes 0 & 1 for TX & RX ACK support
+	/* Enable ACKing on pipes 0 & 1 */
 	nrf24_configRegister(EN_AA,(1<<ENAA_P0)|(1<<ENAA_P1)|(0<<ENAA_P2)|(0<<ENAA_P3)|(0<<ENAA_P4)|(0<<ENAA_P5));
 
-	// Auto retransmit delay: 2000 us and Up to 15 retransmit trials
+	/* Auto retransmit delay: 2000 us and Up to 15 retransmissions */
 	nrf24_configRegister(SETUP_RETR,(0x07<<ARD)|(0x0F<<ARC));
-	
-	uint8_t regval = nrf24_readRegister(SETUP_RETR);
-	if (regval != ((0x07<<ARD)|(0x0F<<ARC)))
-		return 1; /* There may be no nRF24 connected */
 	
 	/* Reset status bits */
 	nrf24_configRegister(STATUS, (1 << RX_DR) | (1 << TX_DS) | (1 << MAX_RT));
 
-	// Start listening
+	/* Start listening */
 	nrf24_powerUpRx();
 	
-	return 0;
+	return NRF24_CHIP_ON;
 }
 
 /* Set the RX address */
@@ -92,7 +93,7 @@ void nrf24_tx_address(uint8_t* adr)
 	}
 	nrf24_csn_digitalWrite(HIGH);
 	
-	_delay_us(100);
+	_delay_us(10);
 	
 	/* RX_ADDR_P0 must be set to the sending addr for auto ack to work. */
 	nrf24_csn_digitalWrite(LOW);
@@ -132,22 +133,22 @@ uint8_t nrf24_payloadLength()
 	payload_len=spi_exchange(0);
 	nrf24_csn_digitalWrite(HIGH);
 	
-	/* If payload is larger than 32 or 0, an error has occurred in transmission
-	 * and payload must be discarded */
+	/* If payload is larger than 32 or equal to 0, an error has 
+	 * occurred in transmission and payload must be discarded */
 	if( (payload_len == 0) | (payload_len > NRF24_MAX_PAYLOAD)){
 		/* Flush RX FIFO */
 		nrf24_csn_digitalWrite(LOW);
 		spi_exchange(FLUSH_RX);
 		nrf24_csn_digitalWrite(HIGH);
-		return 0;
+		payload_len = 0;
 	}
 	return payload_len;
 }
 
-/* Reads packet bytes into data array */
+/* Reads payload bytes into data array */
 void nrf24_getData(uint8_t * data, uint8_t * pkt_len)
 {
-	/* Reset Received Data flag bit */
+	/* Reset Received Data flag */
 	nrf24_configRegister(STATUS,(1<<RX_DR));
 
 	/* Number of bytes in the RX FIFO */
@@ -322,6 +323,7 @@ void nrf24_ce_digitalWrite(uint8_t state)
 		_delay_us(10); /* Minimum CE High period for stuff to work */
 	}
 	else{
+		_delay_us(200); /* Minimum CE interval from last edge */
 		clr_bit(NRF24_PORT,NRF24_CE);
 	}
 }

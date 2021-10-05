@@ -30,7 +30,6 @@ volatile uint8_t command[32]={};
 int main(void)
 {
 	uint8_t status;
-	uint8_t tx_result;
 	uint8_t try=1;
 	uint8_t flag=0;
 	uint8_t uart_buffer[20];
@@ -40,6 +39,9 @@ int main(void)
 	spi_init();
 	
 	memset(command, 'a', 32);
+	for(uint8_t i=0; i<32; i++){
+		command[i]=i;
+	}
 		
 	status=nrf24_config(tx_addr,rx_addr);
 	if(status!=0){
@@ -49,23 +51,29 @@ int main(void)
 
 	uart_puts("\r\nReady to transmit");
 	uint8_t dir=0;
-		while(1)
+	uint8_t tx_result;
+	
+	uint32_t i=321;
+		while(i--)
 		{
-			flag=0;
-			sprintf(uart_buffer, "\r\n%d", try);
-			uart_puts(uart_buffer);
+			//sprintf(uart_buffer, "\r\n%d", try);
+			//uart_puts(uart_buffer);
 			
-			for(uint8_t i=0; i<100; i++)
-				_delay_ms(10);
+			_delay_ms(4);
+			tx_result=NRF24_MESSAGE_LOST;
+			while(tx_result==NRF24_MESSAGE_LOST)
+			{
+				nrf24_sendData(command, try);
+				tx_result=nrf24_wait_tx_result();
+			}
 			
-			nrf24_sendData(command, try);
 			
-			tx_result=nrf24_wait_tx_result();
+			
 			
 			if(tx_result != NRF24_MESSAGE_SENT)
 				flag=1;
 			
-			if (dir==0)
+			if (dir==1)
 				try++;
 			else
 				try--;
@@ -73,11 +81,9 @@ int main(void)
 				dir=1;
 			else if(try==0)
 				dir=0;
-				
-			if(flag==1)
-				uart_puts("\r\nfailed");
-			else
-				uart_puts("\r\nno fails");
 		}
-
+		if(flag==1)
+			uart_puts("\r\nfailed");
+		else
+			uart_puts("\r\nno fails");
 }
