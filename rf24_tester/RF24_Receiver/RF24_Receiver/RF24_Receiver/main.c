@@ -22,30 +22,35 @@
 #include "uart.h"
 #include "config.h"
 
+volatile uint8_t rx_addr[]={0x20, 0x10, 0x05};
+volatile uint8_t tx_addr[]={0x05, 0x10, 0x20};
+
+volatile uint8_t data[32];
+volatile uint8_t data_len=0;
+
 int main(void)
 {
+	uint8_t status;
+	uint8_t uart_buffer[20]={};
+	
 	wdt_disable();
 	uart_init();
 	
 	uart_puts("\x1b[2J\r\n");
 	
 	spi_init();
-
-	uint8_t tx_addr[]={'M', 'A', 'S', 'T', 'R'};
-	uint8_t rx_addr[]={'S', 'L', 'A', 'V', 'E'};
 	
-	nrf24_config(rx_addr,tx_addr);
-	
-	uint8_t data[32];
-	uint8_t data_len=7;
-	
-	uint8_t uart_buffer[20]={};
-	
-	uart_puts("\r\n");
+	status=nrf24_config(tx_addr,rx_addr);
+	if(status!=0){
+		uart_puts("\r\nNRF24 Not connected!");
+		return -1;
+	}
+		
+	uart_puts("\r\nReady to receive.");
 	
     while(1)
     {
-		while(!nrf24_dataReady());
+		while(nrf24_dataReady()==NRF24_DATA_UNAVAILABLE);
 		nrf24_getData(data, &data_len);
 		
 		uart_puts("\r\nData ready: ");
@@ -54,6 +59,8 @@ int main(void)
 			sprintf(uart_buffer, "%c ", data[i]);
 			uart_puts(uart_buffer);
 		}
+		sprintf(uart_buffer, " - %d",data_len);
+		uart_puts(uart_buffer);
 		
     }
 }

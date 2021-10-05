@@ -30,7 +30,7 @@
 #define HIGH 1
 
 /* Setup functions */
-void nrf24_config(uint8_t TX_addr[nrf24_ADDR_WIDTH], uint8_t RX_addr[nrf24_ADDR_WIDTH]);
+uint8_t nrf24_config(uint8_t TX_addr[nrf24_ADDR_WIDTH], uint8_t RX_addr[nrf24_ADDR_WIDTH]);
 void nrf24_rx_address(uint8_t* adr);
 void nrf24_tx_address(uint8_t* adr);
 
@@ -39,8 +39,10 @@ void nrf24_sendData(uint8_t* data, uint8_t pkt_len);
 void nrf24_getData(uint8_t * data, uint8_t * pkt_len);
 
 /* State check functions */
-uint8_t nrf24_dataReady();uint8_t nrf24_getStatus();
+uint8_t nrf24_dataReady();
+uint8_t nrf24_getStatus();
 uint8_t nrf24_rxFifoEmpty();
+void nrf24_resetStatus();
 
 /* Used in dynamic length mode */
 uint8_t nrf24_payloadLength();
@@ -56,8 +58,7 @@ void nrf24_powerDown();
 
 /* Low level interface */
 void nrf24_configRegister(uint8_t reg, uint8_t value);
-void nrf24_readRegister(uint8_t reg, uint8_t* value, uint8_t len);
-void nrf24_writeRegister(uint8_t reg, uint8_t* value, uint8_t len);
+uint8_t nrf24_readRegister(uint8_t reg);
 void nrf24_ce_digitalWrite(uint8_t state);
 void nrf24_csn_digitalWrite(uint8_t state);
 

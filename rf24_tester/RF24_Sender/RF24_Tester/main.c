@@ -22,31 +22,41 @@
 #include "uart.h"
 #include "config.h"
 
+volatile uint8_t tx_addr[]={0x20, 0x10, 0x05};
+volatile uint8_t rx_addr[]={0x05, 0x10, 0x20};
+	
+volatile uint8_t command[32]={};
+
 int main(void)
 {
+	uint8_t status;
+	uint8_t tx_result;
+	uint8_t try=1;
+	uint8_t flag=0;
+	uint8_t uart_buffer[20];
+	
 	wdt_disable();
 	uart_init();
 	spi_init();
 	
-	uint8_t command[]={'T', 'E', 'S', 'T', 'I', 'N', 'G'};
+	memset(command, 'a', 32);
 		
-	uint8_t tx_addr[]={'M', 'A', 'S', 'T', 'R'};
-	uint8_t rx_addr[]={'S', 'L', 'A', 'V', 'E'};
-		
-	nrf24_config(tx_addr,rx_addr);
-	
-	uint8_t tx_result;
-	
-	uint32_t try=0;
+	status=nrf24_config(tx_addr,rx_addr);
+	if(status!=0){
+		uart_puts("\r\nNRF24 Not connected!");
+		return -1;
+	}
 
-	uart_puts("\r\n");
+	uart_puts("\r\nReady to transmit");
 	
-	uint8_t flag=0;
-	
-    while(try++ < 100)
+    while(try++ < 32)
     {
-		_delay_ms(1000);
-		nrf24_sendData(command, sizeof(command));
+		sprintf(uart_buffer, "\r\n%d", try);
+		uart_puts(uart_buffer);
+		
+		for(uint8_t i=0; i<100; i++)
+			_delay_ms(10);
+		nrf24_sendData(command, try);
 		
 		tx_result=nrf24_wait_tx_result();
 		if(tx_result != NRF24_MESSAGE_SENT)
