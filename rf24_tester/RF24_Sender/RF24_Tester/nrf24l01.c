@@ -19,7 +19,7 @@
 #include "uart.h"
 #include <util/delay.h>
 
-static volatile uint8_t dummy_data[NRF24_MAX_PAYLOAD]={0};
+static volatile uint8_t rf24_mode=MODE_IDLE;
 
 /* Setup the module */
 uint8_t nrf24_config(uint8_t *TX_addr, uint8_t *RX_addr)
@@ -59,7 +59,6 @@ uint8_t nrf24_config(uint8_t *TX_addr, uint8_t *RX_addr)
 	uint8_t regval = nrf24_readRegister(SETUP_RETR);
 	if (regval != ((0x07<<ARD)|(0x0F<<ARC)))
 		return 1; /* There may be no nRF24 connected */
-	
 	
 	/* Reset status bits */
 	nrf24_configRegister(STATUS, (1 << RX_DR) | (1 << TX_DS) | (1 << MAX_RT));
@@ -117,7 +116,7 @@ uint8_t nrf24_dataReady()
 	 * data in the FIFO in the occasions where RX_DR
 	 * isn't set. */
 	if ( status & (1 << RX_DR) ) {
-		uart_puts("\r\nData received");
+		//uart_puts("\r\nData received");
 		return NRF24_DATA_AVAILABLE;
 	}
 	return nrf24_rxFifoEmpty();
@@ -135,15 +134,11 @@ uint8_t nrf24_payloadLength()
 	
 	/* If payload is larger than 32 or 0, an error has occurred in transmission
 	 * and payload must be discarded */
-	if( (payload_len == 0) | (payload_len > 32)){
+	if( (payload_len == 0) | (payload_len > NRF24_MAX_PAYLOAD)){
 		/* Flush RX FIFO */
 		nrf24_csn_digitalWrite(LOW);
 		spi_exchange(FLUSH_RX);
 		nrf24_csn_digitalWrite(HIGH);
-		
-		uint8_t buf[20];
-		sprintf(buf, "\r\nlen:%d", payload_len);
-		uart_puts(buf);
 		return 0;
 	}
 	return payload_len;
@@ -189,14 +184,11 @@ void nrf24_sendData(uint8_t* data, uint8_t pkt_len)
 	/* Write cmd to write payload */
 	spi_exchange(W_TX_PAYLOAD);
 	
-	uart_puts("\r\n");
-	uint8_t buf[10];
 	/* Write payload */
 	for (uint8_t i=0; i<pkt_len; i++)
 	{
 		spi_exchange(data[i]);
 	}
-	uart_puts("\r\n");
 	
 	/* Pull up chip select */
 	nrf24_csn_digitalWrite(HIGH);
@@ -239,29 +231,43 @@ uint8_t nrf24_wait_tx_result()
 /* Set chip as receiver */
 void nrf24_powerUpRx()
 {
-	/* Config RF24 as Emitter */
-	nrf24_configRegister(CONFIG,nrf24_CONFIG|((1<<PWR_UP)|(1<<PRIM_RX)));
+	if(rf24_mode != MODE_RX){
+		/* Config RF24 as receiver */
+		nrf24_configRegister(CONFIG,nrf24_CONFIG|((1<<PWR_UP)|(1<<PRIM_RX)));
 	
-	/* Enable receiver address on Pipe 1. Pipe 0 is for transmitting ACKs */
-	nrf24_configRegister(EN_RXADDR,(0<<ERX_P0)|(1<<ERX_P1));
+		/* Enable receiver address on Pipe 1. Pipe 0 is for transmitting ACKs */
+		nrf24_configRegister(EN_RXADDR,(0<<ERX_P0)|(1<<ERX_P1));
 	
-	/* Turn on chip */
-	nrf24_ce_digitalWrite(HIGH);
+		/* Settling time */
+		_delay_us(100);
+	
+		/* Turn on chip */
+		nrf24_ce_digitalWrite(HIGH);
+	
+		rf24_mode=MODE_RX;
+	}
 }
 
 /* Set chip as transmitter */
 void nrf24_powerUpTx()
 {
-	/* Turn on chip in TX mode*/
-	nrf24_configRegister(CONFIG, nrf24_CONFIG | (1<<PWR_UP) | (0<<PRIM_RX) );
+	if(rf24_mode != MODE_TX){
+		/* Turn on chip in TX mode*/
+		nrf24_configRegister(CONFIG, nrf24_CONFIG | (1<<PWR_UP) | (0<<PRIM_RX) );
 	
-	/* Enable receiver address on pipe 0 for ACKs*/
-	nrf24_configRegister(EN_RXADDR,(1<<ERX_P0)|(0<<ERX_P1));
+		/* Enable receiver address on pipe 0 for ACKs*/
+		nrf24_configRegister(EN_RXADDR,(1<<ERX_P0)|(0<<ERX_P1));
 	
-	/* Flush TX FIFO */
-	nrf24_csn_digitalWrite(LOW);
-	spi_exchange(FLUSH_TX);
-	nrf24_csn_digitalWrite(HIGH);
+		/* Flush TX FIFO */
+		nrf24_csn_digitalWrite(LOW);
+		spi_exchange(FLUSH_TX);
+		nrf24_csn_digitalWrite(HIGH);
+	
+		/* Settling time */
+		_delay_us(100); 
+		
+		rf24_mode=MODE_TX;
+	}
 }
 
 /* Checks if RX FIFO is empty or not */
@@ -274,7 +280,7 @@ uint8_t nrf24_rxFifoEmpty()
 		return NRF24_DATA_UNAVAILABLE;
 	}
 	else{
-		uart_puts("\r\nFifo has data");
+		//uart_puts("\r\nFifo has data");
 		return NRF24_DATA_AVAILABLE;
 	}
 }

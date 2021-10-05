@@ -29,6 +29,12 @@
 #define LOW 0
 #define HIGH 1
 
+enum nrf24_modes{
+	MODE_RX,
+	MODE_TX,
+	MODE_IDLE
+};
+
 /* Setup functions */
 uint8_t nrf24_config(uint8_t TX_addr[nrf24_ADDR_WIDTH], uint8_t RX_addr[nrf24_ADDR_WIDTH]);
 void nrf24_rx_address(uint8_t* adr);
