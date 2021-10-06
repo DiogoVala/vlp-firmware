@@ -10,7 +10,7 @@ spi.d spi.o: .././spi.c \
  c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\version.h \
  c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\fuse.h \
  c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\lock.h \
- .././uart.h .././config.h .././spi.h
+ .././uart.h .././spi.h
 
 c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\io.h:
 
@@ -35,7 +35,5 @@ c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\fuse.h:
 c:\program\ files\microchip\xc8\v2.31\avr\avr\include\avr\lock.h:
 
 .././uart.h:
-
-.././config.h:
 
 .././spi.h:

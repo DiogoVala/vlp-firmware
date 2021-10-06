@@ -9,7 +9,11 @@
 #ifndef UART_H
 #define UART_H
 
-#include "config.h"
+#define UART_BAUD_RATE 9600
+
+#ifndef F_CPU
+#define F_CPU 16000000UL
+#endif
 
 #define BAUD_PRESCALER (((F_CPU / (UART_BAUD_RATE * 16UL))) - 1)
 

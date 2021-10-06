@@ -39,10 +39,7 @@
 /* Configure SPI  */
 void spi_init(void);
 
-/* Send one byte over SPI */
+/* Send/Receive one byte over SPI */
 uint8_t spi_exchange(uint8_t data);
-
-/* Send and receive multiple bytes over SPI */
-void spi_exchange_n(uint8_t* dataout,uint8_t* datain,uint8_t len);
 
 #endif
