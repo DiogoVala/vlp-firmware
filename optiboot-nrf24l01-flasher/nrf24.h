@@ -131,51 +131,6 @@ static void nrf24_delay(void) {
 	my_delay(5);
 }
 
-/* Enable 16-bit CRC */
-#define CONFIG_VAL ((1 << MASK_RX_DR) | (1 << MASK_TX_DS) | \
-		(1 << MASK_MAX_RT) | (1 << CRCO) | (1 << EN_CRC))
-
-static int nrf24_init(void) {
-	/* CE and CSN are outputs */
-	CE_DDR |= CE_PIN;
-	CSN_DDR |= CSN_PIN;
-
-	nrf24_ce(0);
-	nrf24_csn(1);
-	nrf24_delay();
-
-	/* 2ms interval, 15 retries (16 total) */
-	nrf24_write_reg(SETUP_RETR, 0x7f);
-	if (nrf24_read_reg(SETUP_RETR) != 0x7f)
-		return 1; /* There may be no nRF24 connected */
-
-	/* Maximum Tx power, 250kbps data rate */
-	nrf24_write_reg(RF_SETUP, (1 << RF_PWR_LOW) | (1 << RF_PWR_HIGH) |
-			(1 << RF_DR_LOW));
-	/* Dynamic payload length for TX & RX (pipes 0 and 1) */
-	nrf24_write_reg(DYNPD, 0x03);
-	nrf24_write_reg(FEATURE, 1 << EN_DPL);
-	/* Reset status bits */
-	nrf24_write_reg(STATUS, (1 << RX_DR) | (1 << TX_DS) | (1 << MAX_RT));
-	/* Set some RF channel number */
-	nrf24_write_reg(RF_CH, 2);
-	/* 3-byte addresses */
-	nrf24_write_reg(SETUP_AW, 0x01);
-	/* Enable ACKing on both pipe 0 & 1 for TX & RX ACK support */
-	nrf24_write_reg(EN_AA, 0x03);
-
-	return 0;
-}
-
-static void nrf24_set_rx_addr(uint8_t addr[3]) {
-	nrf24_write_addr_reg(RX_ADDR_P1, addr);
-}
-
-static void nrf24_set_tx_addr(uint8_t addr[3]) {
-	nrf24_write_addr_reg(TX_ADDR, addr);
-	/* The pipe 0 address is the address we listen on for ACKs */
-	nrf24_write_addr_reg(RX_ADDR_P0, addr);
-}
 
 static uint8_t nrf24_in_rx = 0;
 
@@ -214,13 +169,6 @@ static void nrf24_idle_mode(uint8_t standby) {
 	nrf24_in_rx = 0;
 }
 
-static uint8_t nrf24_rx_new_data(void) {
-	return (nrf24_read_status() >> RX_DR) & 1;
-}
-
-static uint8_t nrf24_rx_fifo_data(void) {
-	return !(nrf24_read_reg(FIFO_STATUS) & (1 << RX_EMPTY));
-}
 
 static uint8_t nrf24_rx_data_avail(void) {
 	uint8_t ret;
