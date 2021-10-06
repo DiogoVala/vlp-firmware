@@ -33,6 +33,7 @@ uint8_t bitstream_byte_array[NRF24_MAX_PAYLOAD] = {0}; /* Received bitstream byt
 uint8_t bitstream[BITSTREAM_MAX_BITS] = {1,0}; /* Bitstream bits go here */
 uint8_t byte_count = 0; /* Number of bytes in received bitstream */
 uint8_t bitstreamSize = 2; /* Number of bits in received bitstream */
+uint8_t data_len=0; /* Length of data received */
 
 /* Prototypes of private functions */
 void buildLEDCommand(led_t* ledp);
@@ -46,8 +47,6 @@ bool isReset();
 /* Checks the RF module for new data and processes it */
 void checkRF(led_t* ledp) {
 	
-	uint8_t data_len=0;
-	
 	wdt_reset();
 	
 	if(nrf24_dataReady() == NRF24_DATA_AVAILABLE){
@@ -60,8 +59,8 @@ void checkRF(led_t* ledp) {
 		if(isReset())
 		{
 			uart_puts("\r\nSlave would reset now.");
-			//wdt_enable(WDTO_15MS);
-			//while(1);
+			wdt_enable(WDTO_120MS);
+			while(1);
 		}
 	
 		#if DEBUG_COMM 
@@ -108,15 +107,9 @@ void checkRF(led_t* ledp) {
 }
 
 bool isReset() {
-	bool reset = true;
-	static uint8_t reset_cmd[]={'R', 'E', 'S', 'E', 'T'};
-		
-	for(uint8_t i=0; i<sizeof(reset_cmd); i++)
-	{
-		if(RX_command_array[i] != reset_cmd[i])
-			reset=false;
-	}
-	return reset;
+	if(data_len==1 && RX_command_array[0]==0xFF)
+		return true;
+	return false;
 }
 
 /* Updates bitstream array with new data from RF */

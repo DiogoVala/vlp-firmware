@@ -19,11 +19,12 @@ static void flasher_tx_handle(void);
 #include <avr/wdt.h>
 #include <math.h>
 #include <util/delay.h>
+#include <stdlib.h>
 
 //#include "timer1.h"
-#include "uart.h"
-#include "spi.h"
-#include "nrf24l01.h"
+#include "../../Common/uart.h"
+#include "../../Common/spi.h"
+#include "../../Common/nrf24l01.h"
 
 static struct ring_buffer_s {
 	uint8_t data[FIFO_MASK + 1];
@@ -35,13 +36,20 @@ static void handle_input(char ch) {
 }
 
 void main() {
-	uint8_t RX_addr[nrf24_ADDR_WIDTH]={'M', 'T', 'R'};
-	uint8_t TX_addr[nrf24_ADDR_WIDTH]={'L', 'M', '1'};
+	uint8_t RX_addr[NRF24_ADDR_WIDTH]={'M', 'T', 'R'};
+	uint8_t TX_addr[NRF24_ADDR_WIDTH]={'L', 'M', '1'};
+	uint8_t status;
 	
 	uart_init();
 	//timer_init();
 	spi_init();
-	nrf24_config(RX_addr, TX_addr);
+	status=nrf24_config(TX_addr, RX_addr);
+	if(status!=NRF24_CHIP_NOMINAL)
+	{
+		uart_puts("\r\nChip Disconnected");
+		return EXIT_FAILURE;
+	}
+	
 	flasher_tx_handle();
 	sei();
 
@@ -144,17 +152,12 @@ static void flasher_tx_handle(void) {
 	 * our radio address to return the ACK packets to.
 	 */
 	if (first_tx) {
-		uint8_t reset_cmd[32]={'R', 'E', 'S', 'E', 'T'};
-		for(uint8_t i=0; i<31; i++)
-		{
-			reset_cmd[i]=i;
-		}
-		
 		/*
 		 * Our protocol requires any program running on the board
 		 * to reset it if it receives a 0xff byte.
 		 */
-		nrf24_sendData(reset_cmd, 31);
+		uart_puts("\r\nSending Reset");
+		nrf24_sendData(reset_cmd, 5);
 		nrf24_wait_tx_result();
 
 		/* Give the board time to reboot and enter the bootloader */

@@ -4,18 +4,12 @@
  * 
  * Updated by: Diogo Vala
  *
- * Description: Useful macro functions and configs
+ * Description: Useful macro functions
  * 
  */
 
-#ifndef __CONFIG_H__
-#define	__CONFIG_H__
-
-#ifndef F_CPU
-#define F_CPU 16000000UL
-#endif
-
-#define UART_BAUD_RATE	9600 
+#ifndef __UTILS_H__
+#define	__CUTILS_H__
 
 /* Macro functions d*/
 #define set_bit(REGISTER, BIT)    REGISTER |=  _BV(BIT)
