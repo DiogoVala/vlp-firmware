@@ -8,9 +8,11 @@
  * mode of operation of the luminary
  */
 
+/* Library Includes */
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+/* File includes */
 #include "../../Common/led.h"
 #include "../../Common/utils.h"
 #include "timer.h"
@@ -20,8 +22,7 @@ volatile uint16_t compB0_1;
 volatile uint16_t compB1_0;
 volatile uint16_t * compB[2] = {&compB1_0, &compB0_1};
 
-void stopTimer();
-
+/* Configures the timer and interrupts according to the desired LED mode of operation */
 void setupTimer(led_t *ledp) {
     cli(); /* Disable global interrupts */
 
@@ -67,6 +68,7 @@ void setupTimer(led_t *ledp) {
     TCCR1B = (1 << WGM12) | (1 << CS10); /* "Clear Timer on Compare Match with OCR1A" and "Clock with no prescaling" */
 }
 
+/* Stops timer and disables timer interrupts */
 void stopTimer() {
     cli();
     TCCR1A = 0x00; /* Clear control registers */

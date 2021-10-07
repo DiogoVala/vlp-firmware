@@ -26,44 +26,45 @@
 #include "timer.h"
 
 /* Debug mode */
-#define DEBUG_COMM true
+/* Presents useful information in the terminal */
+#define DEBUG_COMM false
 
-uint8_t RX_command_array[NRF24_MAX_PAYLOAD] = {}; /* Received bytes go here */
-uint8_t bitstream_byte_array[NRF24_MAX_PAYLOAD] = {0}; /* Received bitstream bytes go here */
-uint8_t bitstream[BITSTREAM_MAX_BITS] = {1,0}; /* Bitstream bits go here */
+uint8_t RX_command_array[NRF24_MAX_PAYLOAD] = {}; /* Received bytes*/
+uint8_t bitstream_byte_array[NRF24_MAX_PAYLOAD] = {0}; /* Received bitstream bytes*/
+uint8_t bitstream[BITSTREAM_MAX_BITS] = {1,0}; /* Bitstream bits*/
 uint8_t byte_count = 0; /* Number of bytes in received bitstream */
 uint8_t bitstreamSize = 2; /* Number of bits in received bitstream */
 uint8_t data_len=0; /* Length of data received */
 
-/* Prototypes of private functions */
-void buildLEDCommand(led_t* ledp);
-void updateBitstream();
-void updateLED(led_t* ledp);
-void byteArrayToBits(uint8_t byte_array[], uint8_t bitstreamSize);
-void bitsToByteArray(uint8_t bitstream[], uint8_t bitstreamSize);
-bool isCommandValid();
-bool isReset();
-
 /* Checks the RF module for new data and processes it */
 void checkRF(led_t* ledp) {
 	
+	/* Reset watchdog timer */
 	wdt_reset();
 	
 	if(nrf24_dataReady() == NRF24_DATA_AVAILABLE){
 	
-		cli();
+		cli(); /* Disable interrupts */
 	
 		memset(RX_command_array, '\0', sizeof(RX_command_array));
-		nrf24_getData(RX_command_array, &data_len); /* Store received bytes command array */
+		
+		/* Get data from RF24 chip */
+		nrf24_getData(RX_command_array, &data_len);
 	
-		if(isReset())
+		/* If the received command is a reset command */
+		if(command_IsReset())
 		{
-			uart_puts("\r\nSlave would reset now.");
+			#if DEBUG_COMM 
+			uart_puts("\r\nLuminary should reset now.");
+			#endif
+			
+			/* Re-enable watchdog to force a reset */
+			wdt_disable();
 			wdt_enable(WDTO_120MS);
 			while(1);
 		}
 	
-		#if DEBUG_COMM 
+		#if DEBUG_COMM /* Sends all received bytes to the terminal */
 			uint8_t buf[10]={0};
 			uart_puts("\r\nReceived data:\r\n");
 			sprintf(buf, "Size: %d\r\n", data_len);
@@ -78,22 +79,23 @@ void checkRF(led_t* ledp) {
 	
 		/* Evaluate data*/
 		if (RX_command_array[ID] == ledp->ledID) { /* If command concerns this luminary */
+			
 			if (RX_command_array[IDENTIFIER] == BITSTREAM_IDENTIFIER) /* Bitstream received */ {
            
 				updateBitstream();
             
-				#if DEBUG_COMM
+				#if DEBUG_COMM /* Sends the bitstream to the terminal */
 				uart_puts("\r\nBitstream received.\r\n");
 				for(uint8_t i=0; i<bitstreamSize; i++)
 				{
-					sprintf(buf, "%d, ", bitstream[i]);
+					sprintf(buf, "%d", bitstream[i]);
 					uart_puts(buf);
 				}
 				#endif
 			}
 			else /* Command received */ 
 			{
-				if(isCommandValid()){
+				if(command_IsValid()){
 					updateLED(ledp); /* Update LED with new parameters */
 				
 					#if DEBUG_COMM
@@ -102,14 +104,8 @@ void checkRF(led_t* ledp) {
 				}
 			}
 		}
-		sei();
+		sei(); /* Enable interrupts */
 	}
-}
-
-bool isReset() {
-	if(data_len==1 && RX_command_array[0]==0xFF)
-		return true;
-	return false;
 }
 
 /* Updates bitstream array with new data from RF */
@@ -120,8 +116,10 @@ void updateBitstream() {
     if (bitstreamSize % 8 != 0) byte_count += 1; /* Ceil of byte_count */
 
     for (uint8_t i = 0; i < byte_count; i++) {
-        bitstream_byte_array[i] = RX_command_array[BITSTREAM + i]; /* Store received array into bitstream byte array */
+		/* Store received array into bitstream byte array */
+        bitstream_byte_array[i] = RX_command_array[BITSTREAM + i]; 
     }
+	
     byteArrayToBits(bitstream_byte_array, bitstreamSize);
 }
 
@@ -136,6 +134,7 @@ void updateLED(led_t* ledp) {
     updateLEDHW(ledp); /* Changes state pin and digpot position */
 	setupTimer(ledp); /* Changes how the timer behaves - depends on mode */
 	
+	/* Shows the new LED settings */
 	#if DEBUG_COMM
 		uint8_t buf[100]={};
 		sprintf(buf, "\r\nState: %d\r\nMode: %s\r\nIntensity: %d\r\nFrequency: %d\r\nDuty: %d", \
@@ -150,25 +149,23 @@ uint8_t getBit(led_t *ledp) {
 	 * bitstream em termos de simbolos, fazer um switch ao simbolo e 
 	 * alterar o valor do Pot. Pode retornar sempre 1 nesse caso. */
 	
-    static uint8_t pos = 0;
+    static uint8_t array_pos = 0;
 
-    if (pos >= (bitstreamSize-1))
-	{
-        pos = 0;
+	/* Cycle through array */
+    if (array_pos >= (bitstreamSize-1)){
+        array_pos = 0;
 	}
-    else
-	{
-        pos++;
+    else{
+        array_pos++;
 	}
 
     if (ledp->ledMode != LED_MODE_VPPM)
-        return bitstream[pos];
+        return bitstream[array_pos];
     else
-        return !bitstream[pos]; /* In VPPM we want the bit to start at the opposite value and invert at OCR1B */
+        return !bitstream[array_pos]; /* In VPPM we want the bit to start at the opposite value and invert at OCR1B */
 }
 
-
-/* Transforms an array of bytes to an array of bits */
+/* Transforms an array of bytes into an array of bits */
 void byteArrayToBits(uint8_t byte_array[], uint8_t bitstreamSize) {
     uint8_t bit_count=1;
     
@@ -180,7 +177,15 @@ void byteArrayToBits(uint8_t byte_array[], uint8_t bitstreamSize) {
     }
 }
 
-bool isCommandValid(){
+/* True if the received command is a reset command */
+bool command_IsReset() {
+	if(data_len==1 && RX_command_array[0]==RESET_COMMAND)
+		return true;
+	return false;
+}
+
+/* True if the received command has valid parameters */
+bool command_IsValid(){
 	bool validCommand=true;
 
 	if(RX_command_array[STATE] > LED_MAX_FREQUENCY){

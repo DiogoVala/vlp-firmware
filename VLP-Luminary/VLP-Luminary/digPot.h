@@ -14,7 +14,7 @@
 /* Pot nomenclature
  *    A
  *    |
- * W--|
+ * W--| 
  *    |
  *    B
  */

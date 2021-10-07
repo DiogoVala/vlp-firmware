@@ -15,10 +15,13 @@
 #define F_CPU 16000000UL
 #endif
 
+/* File includes */
 #include "../../Common/led.h"
 
+/* Configures the timer and interrupts according to the desired LED mode of operation */
 void setupTimer(led_t *ledp);
 
+/* Stops timer and disables timer interrupts */
 void stopTimer();
 
 #endif	/* TIMER_H */

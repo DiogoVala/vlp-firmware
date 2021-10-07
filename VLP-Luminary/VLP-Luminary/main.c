@@ -24,7 +24,6 @@
 #include "../../Common/uart.h"
 #include "../../Common/utils.h"
 #include "../../Common/eeprom.h"
-
 #include "communication.h"
 #include "ledInterface.h"
 
@@ -72,23 +71,6 @@ ISR(TIMER1_COMPB_vect) // Timer1 ISR COMPB
 	}
 }
 
-
-void reset(void) __attribute__((naked)) __attribute__((section(".init3")));
-
-//Clear SREG_I on hardware reset.
-void reset(void)
-{
-	cli();
-	// Note that for newer devices (any AVR that has the option to also
-	// generate WDT interrupts), the watchdog timer remains active even
-	// after a system reset (except a power-on condition), using the fastest
-	// prescaler value (approximately 15 ms). It is therefore required
-	// to turn off the watchdog early during program startup.
-	MCUSR = 0; // clear reset flags
-	wdt_disable();
-}
-
-
 int main() {
 	
 	wdt_disable();
@@ -97,13 +79,12 @@ int main() {
 	uint8_t TX_addr[NRF24_ADDR_WIDTH]={'M', 'T', 'R'};
 	uint8_t RX_addr[NRF24_ADDR_WIDTH]={'L', 'M', '1'};
 		
-	
 	uint8_t status;
 	
 	uart_init();
 	
-	uart_puts("\n\x1b[2J\r"); /*Clear screen */
-	uart_puts("\r\nInitializing Luminary.");
+	//uart_puts("\n\x1b[2J\r"); /*Clear screen */
+	//uart_puts("\r\nInitializing Luminary.");
 	
 	spi_init();
 	
@@ -116,44 +97,6 @@ int main() {
 	/* Initialize LED object with default params */
 	initLEDObject(&led, LED_HW_ID);
 	startupLED(&led);
-		
-	
-	#if EEPROM_VERIFY
-	bool valid_eeprom = true;
-	for(uint8_t i=0; i<NRF24_ADDR_WIDTH; i++){
-		if(RX_addr[i] == 0xFF){ /* Default eeprom byte value */
-			uart_puts("\r\nValid luminary address not found in EEPROM.");
-			memset(RX_addr, '0x0', NRF24_ADDR_WIDTH);
-			valid_eeprom=false;
-			break;
-		}
-		if(TX_addr[i] == 0xFF){
-			uart_puts("\r\nValid master address not found in EEPROM.");
-			memset(TX_addr, '0x0', NRF24_ADDR_WIDTH);
-			valid_eeprom=false;
-			break;
-		}
-		if(LED_HW_ID == 0xFF){
-			uart_puts("\r\nValid luminary ID not found in EEPROM.");
-			memset(TX_addr, '0x0', NRF24_ADDR_WIDTH);
-			valid_eeprom=false;
-			break;
-		}
-	}
-	if(valid_eeprom){
-		uart_puts("\r\nAddresses successfully loaded from EEPROM.");
-		
-		uint8_t buf[10]={0};
-		uart_puts("\r\nRX: \r\n");
-		
-		for (uint8_t i=0; i<NRF24_ADDR_WIDTH; i++)
-		{
-			sprintf(buf, "0x%x, ", RX_command_array[i]);
-			uart_puts(buf);
-		}
-		uart_puts("\r\n");
-	}
-	#endif
 	
 	status = nrf24_config(TX_addr, RX_addr);
 	if( status != NRF24_CHIP_NOMINAL){
@@ -168,6 +111,23 @@ int main() {
 		checkRF(&led); 
 	}
 
-	return(EXIT_SUCCESS);
+	return(EXIT_FAILURE);
 }
 
+
+/* Calling the reset function on hardware reset prevents potential 
+ * infinite reset loops when watchdog is configured with a short 
+ * period. */
+void reset(void) __attribute__((naked)) __attribute__((section(".init3")));
+/* Clear SREG_I on hardware reset. */
+void reset(void)
+{
+	cli();
+	// Note that for newer devices (any AVR that has the option to also
+	// generate WDT interrupts), the watchdog timer remains active even
+	// after a system reset (except a power-on condition), using the fastest
+	// prescaler value (approximately 15 ms). It is therefore required
+	// to turn off the watchdog early during program startup.
+	MCUSR = 0; // clear reset flags
+	wdt_disable();
+}
