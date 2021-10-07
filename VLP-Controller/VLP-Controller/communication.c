@@ -8,6 +8,8 @@
  * modules.
  */
 
+/* NOTE: Broadcast needs testing */
+
 /* Library Includes */
 #include <avr/interrupt.h>
 #include <string.h>
@@ -22,19 +24,62 @@
 #include "communication.h"
 
 /* Debug mode */
-#define DEBUG_COMM true
+/* Presents useful information in the terminal */
+#define DEBUG_COMM false
+
+/* Default RF24 addresses */
+uint8_t TX_addr[NRF24_ADDR_WIDTH]={'L', 'M', '1'};
+uint8_t RX_addr[NRF24_ADDR_WIDTH]={'M', 'T', 'R'};
 
 uint8_t TX_command_array[NRF24_MAX_PAYLOAD] = {}; /* Bytes to transmit go here */
 uint8_t ACK_Array[NRF24_MAX_PAYLOAD] = {}; /* Received ACK message goes here */
 uint8_t bitstream_byte_array[NRF24_MAX_PAYLOAD] = {0}; /* Bitstream bits are stored here in the form of bytes before transmitting */
 static volatile uint8_t byte_count = 0; /* Number of bytes needed to store the bitstream before transmitting */ 
 
-/* Prototypes of private functions */
-void buildLEDCommand(led_t* ledp);
-void updateBitstream();
-void updateLED(led_t* ledp);
-void byteArrayToBits(uint8_t byte_array[], uint8_t bitstreamSize);
-void bitsToByteArray(uint8_t bitstream[], uint8_t bitstreamSize);
+/* Builds and sends command with led params */
+void sendCommand(led_t* ledp) {
+	
+	uart_puts("\r\nSending Command... ");
+	buildLEDCommand(ledp);
+	
+	#if DEBUG_COMM
+	uart_puts("\r\nCommand: ");
+	uint8_t buf[50];
+	for (uint8_t i = 0; i <= SIZE_OF_COMMAND-1; i++) {
+		sprintf(buf, "0x%x, ", TX_command_array[i]);
+		uart_puts(buf);
+	}
+	uart_puts("\r\n");
+	#endif
+
+	/* If ID is 255, send to all luminaries */
+	if(TX_command_array[ID]==BROADCAST)
+	{
+		for(uint8_t id=0; id<MAX_LUMINARIES; id++)
+		{
+			TX_command_array[ID]=id; /* Change the ID parameter of command */
+			TX_addr[NRF24_ADDR_WIDTH-1]=id; /* Change the TX address */
+			
+			nrf24_tx_address(TX_addr); /* Update TX address */
+			_delay_us(10);
+			
+			nrf24_sendData(TX_command_array, SIZE_OF_COMMAND); 
+		}
+	}
+	else
+	{
+		TX_addr[NRF24_ADDR_WIDTH-1]=ledp->ledID;
+		nrf24_tx_address(TX_addr);
+		_delay_us(10);
+
+		nrf24_sendData(TX_command_array, SIZE_OF_COMMAND);
+		
+		if(nrf24_wait_tx_result()==NRF24_MESSAGE_SENT)
+			uart_puts("\r\nMessage sent and acknowledged");
+		else
+			uart_puts("\r\nMessage not acknowledged");
+	}
+}
 
 /* Builds and sends the bitstream command */
 void sendBitStream(uint8_t bitstream[], uint8_t bitstreamSize, led_t* ledp) {
@@ -69,50 +114,26 @@ void sendBitStream(uint8_t bitstream[], uint8_t bitstreamSize, led_t* ledp) {
 	{
 		for(uint8_t id=0; id<=MAX_LUMINARIES; id++)
 		{
-			TX_command_array[ID]=id;
+			TX_command_array[ID]=id; /* Change the ID parameter of command */
+			TX_addr[NRF24_ADDR_WIDTH-1]=id; /* Change the TX address */
+			
+			nrf24_tx_address(TX_addr); /* Update TX address */
+			_delay_us(10);
+			
 			nrf24_sendData(TX_command_array, BITSTREAM + byte_count); 
 		}
 	}
 	else
 	{
+		TX_addr[NRF24_ADDR_WIDTH-1]=ledp->ledID;
+		nrf24_tx_address(TX_addr);
+		_delay_us(10);
+		
 		nrf24_sendData(TX_command_array, BITSTREAM + byte_count);
 	}
 }
 
-/* Builds and sends command with led params */
-void sendCommand(led_t* ledp) {
-	
-	uart_puts("\r\nSending Command... ");
-	buildLEDCommand(ledp);
-	
-	#if DEBUG_COMM
-	uart_puts("\r\nCommand: ");
-	uint8_t buf[50];
-	for (uint8_t i = 0; i <= SIZE_OF_COMMAND-1; i++) {
-		sprintf(buf, "0x%x, ", TX_command_array[i]);
-		uart_puts(buf);
-	}
-	uart_puts("\r\n");
-	#endif
 
-	/* If ID is 255, send to all luminaries */
-	if(TX_command_array[ID]==BROADCAST)
-	{
-		for(uint8_t id=0; id<MAX_LUMINARIES; id++)
-		{
-			TX_command_array[ID]=id;
-			nrf24_sendData(TX_command_array, SIZE_OF_COMMAND);
-		}
-	}
-	else
-	{
-		nrf24_sendData(TX_command_array, SIZE_OF_COMMAND);
-		if(nrf24_wait_tx_result()==NRF24_MESSAGE_SENT)
-			uart_puts("\r\nMessage sent and acknowledged");
-		else
-			uart_puts("\r\nMessage not acknowledged");
-	}
-}
 
 /* Builds the command array with the led params to send via RF */
 void buildLEDCommand(led_t* ledp) {

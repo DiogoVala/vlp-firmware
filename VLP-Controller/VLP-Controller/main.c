@@ -32,10 +32,11 @@
 
 static uint8_t bitstream[BITSTREAM_MAX_BITS];
 
+/* Grab addresses from communication.c to configure rf24 chip */
+extern uint8_t TX_addr[NRF24_ADDR_WIDTH];
+extern uint8_t RX_addr[NRF24_ADDR_WIDTH];;
+
 int main() {
-	
-	uint8_t TX_addr[NRF24_ADDR_WIDTH]={'L', 'M', '1'};
-	uint8_t RX_addr[NRF24_ADDR_WIDTH]={'M', 'T', 'R'};
 	
 	led_t led; /* LED object */
 	
@@ -89,8 +90,6 @@ int main() {
                         /*NOTE: THERE IS NO VERIFICATION OF INPUTS */
                     case 0:
                         setLedID(&led, (uint8_t) atoi((char*) msgBuffer));
-						TX_addr[2]=led.ledID;
-						nrf24_tx_address(TX_addr);
                         break;
                     case 1:
                         setLedState(&led, (uint8_t) atoi((char*) msgBuffer));

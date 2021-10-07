@@ -52,5 +52,12 @@ void sendBitStream(uint8_t bitstream[], uint8_t bitstreamSize, led_t* ledp);
 /* Builds and sends command with led params */
 void sendCommand(led_t* ledp);
 
+
+void buildLEDCommand(led_t* ledp);
+void updateBitstream();
+void updateLED(led_t* ledp);
+void byteArrayToBits(uint8_t byte_array[], uint8_t bitstreamSize);
+void bitsToByteArray(uint8_t bitstream[], uint8_t bitstreamSize);
+
 #endif	/* COMMUNICATION_H */
 
