@@ -1,34 +1,20 @@
-/*
-    Copyright (c) 2007 Stefan Engelke <mbox@stefanengelke.de>
+/* nrf24l01_config.h
+ *
+ * Author: Diogo Vala
+ * 
+ * Based on the optiboot rf24 adaptation
+ * 
+ * Description: Memory access macros and mnemonics
+ *				Refer to datasheet for information
+ */
 
-    Permission is hereby granted, free of charge, to any person 
-    obtaining a copy of this software and associated documentation 
-    files (the "Software"), to deal in the Software without 
-    restriction, including without limitation the rights to use, copy, 
-    modify, merge, publish, distribute, sublicense, and/or sell copies 
-    of the Software, and to permit persons to whom the Software is 
-    furnished to do so, subject to the following conditions:
+#ifndef __NRF24_CONFIG_H__
+#define __NRF24_CONFIG_H__
 
-    The above copyright notice and this permission notice shall be 
-    included in all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
-    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
-    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
-    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
-    HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
-    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
-    DEALINGS IN THE SOFTWARE.
-
-    $Id$
-*/
-
-/**/
+/* Chip can only handle 32 bytes on each exchange */
 #define NRF24_MAX_PAYLOAD 32
 
 /* Base configuration for all modes */
-//#define nrf24_CONFIG ((1<<EN_CRC)|(0<<CRCO))
 #define nrf24_CONFIG (((1 << MASK_RX_DR) | (1 << MASK_TX_DS) | (1 << MASK_MAX_RT) | (1 << CRCO) | (1 << EN_CRC)))
 
 /* Memory Map */
@@ -132,3 +118,5 @@
 #define RF_DR_HIGH  3
 #define RF_PWR_LOW  1
 #define RF_PWR_HIGH 2
+
+#endif

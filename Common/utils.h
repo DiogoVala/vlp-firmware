@@ -9,7 +9,7 @@
  */
 
 #ifndef __UTILS_H__
-#define	__CUTILS_H__
+#define	__UTILS_H__
 
 /* Macro functions d*/
 #define set_bit(REGISTER, BIT)    REGISTER |=  _BV(BIT)
@@ -17,5 +17,5 @@
 #define check_bit(REGISTER, BIT) (REGISTER & (_BV(BIT))) >> BIT
 #define xor_bit(REGISTER, BIT)    REGISTER ^= _BV(BIT)
 
-#endif	/* __CONFIG_H__ */
+#endif
 

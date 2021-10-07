@@ -9,6 +9,10 @@
 #ifndef __SPI_H__
 #define __SPI_H__
 
+/* Library Includes */
+#include <avr/io.h>
+#include <inttypes.h>
+
 /* Pinout concerning SPI */
 #define SPI_PORT	 PORTB
 #define SPI_DDR		 DDRB

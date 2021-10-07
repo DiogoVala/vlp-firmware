@@ -6,11 +6,9 @@
  * 
  */
 
-#include <avr/io.h>
-#include "uart.h"
+/* File includes */
 #include "spi.h"
 
-/* Send one byte over SPI */
 uint8_t spi_exchange(uint8_t data) {
     SPDR = data;
     while (!(SPSR & _BV(SPIF))); /* Waits until SPIF is set */

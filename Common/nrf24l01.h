@@ -1,9 +1,22 @@
-#ifndef NRF24
-#define NRF24
+/* nrf24l01.h
+ *
+ * Author: Diogo Vala
+ * 
+ * Based on the optiboot rf24 adaptation
+ * Heavily modified for improved clarity and stability
+ * 
+ * Description: Controls the RF24 chip and its operations 
+ */
 
-#include "nrf24l01_config.h"
+#ifndef __NRF24_H__
+#define __NRF24_H__
+
+/* Library includes */
 #include <stdint.h>
 #include <avr/io.h>
+
+/* File includes */
+#include "nrf24l01_config.h"
 
 /* RF24 Module operating at (2400 + NRF24_CHANNEL) MHz*/
 #define NRF24_CHANNEL 2

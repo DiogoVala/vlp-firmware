@@ -1,22 +1,23 @@
-/*
-* ----------------------------------------------------------------------------
-* “THE COFFEEWARE LICENSE” (Revision 1):
-* <ihsan@kehribar.me> wrote this file. As long as you retain this notice you
-* can do whatever you want with this stuff. If we meet some day, and you think
-* this stuff is worth it, you can buy me a coffee in return.
-* -----------------------------------------------------------------------------
-* This library is based on this library:
-*   https://github.com/aaronds/arduino-nrf24l01
-* -----------------------------------------------------------------------------
-*/
+/* nrf24l01.c
+ *
+ * Author: Diogo Vala
+ * 
+ * Based on the optiboot rf24 adaptation
+ * Heavily modified for improved clarity and stability
+ * 
+ * Description: Controls the RF24 chip and its operations 
+ */
 
+/* Library includes */
+#include <util/delay.h>
+
+/* File includes */
 #include "nrf24l01.h"
 #include "nrf24l01_config.h"
 #include "spi.h"
 #include "utils.h"
-#include "uart.h"
-#include <util/delay.h>
 
+/* Current mode of operation of the rf24 chip */
 static volatile uint8_t rf24_mode = MODE_IDLE;
 
 /* Setup the module */
@@ -95,7 +96,7 @@ void nrf24_tx_address(uint8_t* adr)
 	
 	_delay_us(10);
 	
-	/* RX_ADDR_P0 must be set to the sending addr for auto ack to work. */
+	/* RX_ADDR_P0 must be set to the sending address for auto ack to work. */
 	nrf24_csn_digitalWrite(LOW);
 	spi_exchange(RX_ADDR_P0 | W_REGISTER);
 	for(uint8_t i=0; i<NRF24_ADDR_WIDTH; i++)
@@ -170,7 +171,6 @@ uint8_t nrf24_dataReady()
 	 * data in the FIFO in the occasions where RX_DR
 	 * isn't set. */
 	if ( status & (1 << RX_DR) ) {
-		//uart_puts("\r\nData received");
 		return NRF24_DATA_AVAILABLE;
 	}
 	return nrf24_rxFifoEmpty();
@@ -182,11 +182,9 @@ uint8_t nrf24_rxFifoEmpty()
 	uint8_t fifoStatus=nrf24_readRegister(FIFO_STATUS);
 
 	if(fifoStatus & (1 << RX_EMPTY)){
-		//uart_puts("\r\nFifo empty");
 		return NRF24_DATA_UNAVAILABLE;
 	}
 	else{
-		//uart_puts("\r\nFifo has data");
 		return NRF24_DATA_AVAILABLE;
 	}
 }
