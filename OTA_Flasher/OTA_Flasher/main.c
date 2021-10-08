@@ -1,18 +1,12 @@
-
-#define	MAX_PLD_SIZE (NRF24_MAX_PAYLOAD - 1)
-#define START (NRF24_MAX_PAYLOAD - MAX_PLD_SIZE)
-#define FIFO_MASK 255
-
-static void flasher_setup(void);
-static void flasher_rx_handle(void);
-static void flasher_tx_handle(void);
-
-/*
- * Passthrough between UART and an nRF24.
+/* main.c
+ * 
+ * Author: Diogo Vala
  *
- * Licensed under AGPLv3.
+ * Description: 
+ * 
  */
 
+/* Library includes */
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <string.h>
@@ -20,29 +14,48 @@ static void flasher_tx_handle(void);
 #include <math.h>
 #include <util/delay.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
-//#include "timer1.h"
+/* File includes */
 #include "../../Common/uart.h"
 #include "../../Common/spi.h"
 #include "../../Common/nrf24l01.h"
 
-static struct ring_buffer_s {
-	uint8_t data[FIFO_MASK + 1];
-	uint8_t start, len;
+#define	MAX_PLD_SIZE (NRF24_MAX_PAYLOAD - 1) /* Number of data bytes in the payload */
+#define PKT_ID_IDX 0 /* First byte of the payload is reserved for the packet identifier */
+#define PKT_ID_SIZE 1 /* Size of the packet identifier (in bytes) */
+#define FIFO_SIZE 256 /* Number of bytes in the data buffer that stores received bytes from UART */
+#define TX_TIMEOUT 1000000 /* Some generic timeout value if there is no transmission for a while */
+
+static uint8_t reset_cmd[]={0xFF};
+
+/* Function prototypes */
+static void uart_to_rf(void);
+static void rf_to_uart(void);
+uint8_t min(uint8_t x, uint8_t y);
+
+/* FIFO to receive data from UART ISR */
+static struct fifo_buffer_s {
+	uint8_t data[FIFO_SIZE];
+	uint8_t len; /* Number of bytes currently stored */
 } tx_fifo;
 
-static void handle_input(char ch) {
-	tx_fifo.data[(tx_fifo.start + tx_fifo.len ++) & FIFO_MASK] = ch;
+/* Function to fill the FIFO */
+void handle_input(uint8_t ch) {
+	tx_fifo.data[tx_fifo.len++] = ch;
 }
 
-void main() {
+int main() {
 	uint8_t RX_addr[NRF24_ADDR_WIDTH]={'M', 'T', 'R'};
 	uint8_t TX_addr[NRF24_ADDR_WIDTH]={'L', 'M', '1'};
 	uint8_t status;
 	
 	uart_init();
-	//timer_init();
+	uart_set_RX_handler(handle_input);
+	uart_RX_IE(true);
+	
 	spi_init();
+	
 	status=nrf24_config(TX_addr, RX_addr);
 	if(status!=NRF24_CHIP_NOMINAL)
 	{
@@ -50,121 +63,96 @@ void main() {
 		return EXIT_FAILURE;
 	}
 	
-	flasher_tx_handle();
-	sei();
+	sei(); /* Enable interrupts */
 
-	//serial_set_handler(handle_input);
-	#if 0
 	while(1){
-		static uint8_t tx_cnt; /* Consecutive TX packets counter */
-		
-		uint8_t pkt_len; /* Length of packet received from RF24 */
-		uint8_t pkt_buf[NRF24_MAX_PAYLOAD] /* Stores packets from RF24 */
-		
-		
-		if(nrf24_dataReady() == NRF24_DATA_AVAILABLE){
-			
-			static uint8_t seqn = 0xff;
+		rf_to_uart();
+		uart_to_rf();
+	}
+}
 
-			flasher_rx_handle();
+static void rf_to_uart(void){
 
-			nrf24_getData(pkt_buf, &pkt_len); /* Get reply from RF24 */
+	static uint8_t pkt_id = UINT8_MAX; /* Number of the packet we are currently receiving */
+	uint8_t rx_pkt_len; /* Length of packet received from RF24 */
+	uint8_t rx_pkt_buf[NRF24_MAX_PAYLOAD]; /* Stores packets from RF24 */
 
-			if (pkt_buf[0] != seqn) {
-				seqn = pkt_buf[0];
-				for (uint8_t i = 1; i < pkt_len; i ++)
-					serial_write1(pkt_buf[i]);
-			}
-			tx_cnt = 0;
-		}
+	if(nrf24_dataReady() == NRF24_DATA_AVAILABLE){
 
-		if (tx_fifo.len) { 
-			uint8_t pkt_len, pkt_buf[NRF24_MAX_PAYLOAD], split;
+		nrf24_getData(rx_pkt_buf, &rx_pkt_len); /* Get data from RF24 */
 
-			static uint8_t seqn = 0x00;
-			uint8_t count = 128;
-	
+		/* First byte identifies this packet. If it's a new one, we process it */
+		if (rx_pkt_buf[0] != pkt_id) {
 
-			pkt_buf[0] = seqn ++;
-
-			flasher_tx_handle();
-			
-			tx_cnt ++;
-
-			cli();
-			pkt_len = min(tx_fifo.len, MAX_PLD_SIZE);
-			sei();
-
-			/* HACK */
-			if (tx_cnt == 2 && MAX_PLD_SIZE > 2 && pkt_len == MAX_PLD_SIZE)
-				pkt_len = MAX_PLD_SIZE - 2;
-			else if (MAX_PLD_SIZE > 2 && tx_cnt == 3)
-				pkt_len = 1;
-
-			split = min(pkt_len,
-					(uint16_t) (~tx_fifo.start & FIFO_MASK) + 1);
-
-	
-			memcpy(pkt_buf + START, tx_fifo.data +
-					(tx_fifo.start & FIFO_MASK), split);
-			memcpy(pkt_buf + START + split, tx_fifo.data, pkt_len - split);
-
-
-			cli();
-			tx_fifo.len -= pkt_len;
-			tx_fifo.start += pkt_len;
-			sei();
-
-			while (-- count) {
-				/* Don't flood the remote end with the comms */
-				_delay_ms(4);
-
-				nrf24_tx(pkt_buf, pkt_len + START);
-				if (!nrf24_tx_result_wait())
-					break;
+			pkt_id = rx_pkt_buf[0];
+			for (uint8_t i = PKT_ID_SIZE; i < rx_pkt_len; i++)
+			{
+				uart_putc(rx_pkt_buf[i]); /* Redirect to UART */
 			}
 		}
 	}
-	#endif
 }
 
+static void uart_to_rf(void) {
 
-static uint32_t prev_txrx_ts = 0;
+	static bool first_tx = true;
+	static uint8_t pkt_id = 0; /* Number of the packet we are currently sending */
+	uint8_t tx_pkt_len;
+	uint8_t tx_pkt_buf[NRF24_MAX_PAYLOAD];
+	static uint32_t first_tx_timeout = TX_TIMEOUT;
 
-static void flasher_rx_handle(void) {
-	//prev_txrx_ts = timer_read();
-}
+	/* If there is no transmission for a while, start over */
+	if (!first_tx_timeout--)
+	{
+		first_tx=true;
+	}
 
-static void flasher_tx_handle(void) {
-	static uint8_t first_tx = 1;
-
-	/*
-	 * If more than a second has passed since previous communication
-	 * the bootloader will have left the flash mode by now so this is
-	 * probably a new boot and a new flashing attempt.
-	 */
-	//if ((uint32_t) (timer_read() - prev_txrx_ts) > F_CPU)
-	//	first_tx = 1;
-
-	/*
-	 * Before any actual STK500v2 communication begins we need to
-	 * attempt to reset the board to start the bootloader, and send it
-	 * our radio address to return the ACK packets to.
-	 */
+	/* First transmission sends a reset command to the Luminary program 
+	 * and waits for it to enter the bootloader before sending data */
 	if (first_tx) {
 		/*
 		 * Our protocol requires any program running on the board
-		 * to reset it if it receives a 0xff byte.
+		 * to reset if it receives a single 0xff byte.
 		 */
-		uart_puts("\r\nSending Reset");
-		nrf24_sendData(reset_cmd, 5);
+
+		nrf24_sendData(reset_cmd, 1);
 		nrf24_wait_tx_result();
 
 		/* Give the board time to reboot and enter the bootloader */
 		_delay_ms(100);
 
-		first_tx = 0;
+		first_tx = false;
 	}
+	else if (tx_fifo.len){ /* If there is data in the FIFO */
 
-	//prev_txrx_ts = timer_read();
+		/* First byte of the buffer has the packet identifier  */
+		tx_pkt_buf[PKT_ID_IDX] = pkt_id ++;
+
+		/* UART may be placing byte into the buffer, so disabling interrupt is needed */
+		cli();
+		tx_pkt_len = min(tx_fifo.len, MAX_PLD_SIZE); /* Number of bytes to send*/
+		
+		memcpy(tx_pkt_buf+PKT_ID_SIZE, tx_fifo.data, tx_pkt_len); /* Copy bytes from FIFO into the payload array */
+		
+		memmove(tx_fifo.data, tx_fifo.data+PKT_ID_SIZE, tx_pkt_len); /* Move FIFO data to the start position */
+		
+		tx_fifo.len -= tx_pkt_len;
+		sei();
+
+		while (true) { /* Send until received */
+
+			nrf24_sendData(tx_pkt_buf, tx_pkt_len);
+			if (nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
+				break;
+
+			_delay_ms(4); /* Give the receiver some time to process data */
+		}
+
+		/* Reset timeout */
+		first_tx_timeout = TX_TIMEOUT;
+	}
+}
+
+uint8_t min(uint8_t x, uint8_t y){
+	return (x < y) ? x : y;
 }
