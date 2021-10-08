@@ -9,7 +9,7 @@
 #ifndef UART_H
 #define UART_H
 
-#define UART_BAUD_RATE 9600
+#define UART_BAUD_RATE 115200
 
 #ifndef F_CPU
 #define F_CPU 16000000UL
@@ -34,9 +34,19 @@
 #define EIGHT_BIT (3<<UCSZ00)
 #define DATA_BIT   EIGHT_BIT  // USART Data Bit Selection
 
+/* Enable UART */
 void uart_init();
+
+/* Enable interrupt on RX */
+void uart_RX_IE(bool RX_IE);
+
+/* Set RX callback function */
+void uart_set_RX_handler(void (*handler)(uint8_t ch));
+
 void uart_putc(uint8_t DataByte);
+
 void uart_puts(const char *s );
+
 uint8_t uart_getc();
 
 #endif
