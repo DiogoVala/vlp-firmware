@@ -2,6 +2,8 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
+#include <util/delay.h>
+#include <string.h>
 
 #include "boot.h"
 #include "pin_defs.h"
@@ -55,7 +57,7 @@ static inline void watchdogReset();
 void watchdogConfig(uint8_t x);
 void wait_timeout(void) __attribute__ ((__noreturn__));
 void appStart(uint8_t rstFlags) __attribute__ ((naked))  __attribute__ ((__noreturn__));
-static void radio_init(void);
+void radio_init(void);
 
 
 /*
@@ -292,6 +294,7 @@ int main(void) {
 				// Reenable read access to flash
 				boot_rww_enable();
 				#endif
+			}
 		}
 		/* Read memory block mode, length is big endian.  */
 		else if(ch == STK_READ_PAGE) {
@@ -341,10 +344,6 @@ int main(void) {
 	}
 }
 
-static uint8_t radio_mode = 0;
-static uint8_t radio_present = 0;
-static uint8_t pkt_max_len = 32;
-
 #define CE_DDR		DDRB
 #define CE_PORT		PORTB
 #define CSN_DDR		DDRB
@@ -352,156 +351,79 @@ static uint8_t pkt_max_len = 32;
 #define CE_PIN		(1 << 0)
 #define CSN_PIN		(1 << 2)
 
-
-
-#define SEQN
-
-static void radio_init(void) {
-	uint8_t addr[3] = {'L', 'M', '1'};
-		
+void radio_init(void) {
+	uint8_t RX_addr[3] = {'L', 'M', '1'};
+	uint8_t TX_addr[3] = {'M', 'T', 'R'};
 
 	spi_init();
-
-	if (nrf24_init())
-	return;
-
-	radio_present = 1;
-	/*
-	* Set our own address.
-	*
-	* The remote end's address will be set according to the contents
-	* of the first packet we receive from the master.
-	*/
-
-	nrf24_set_rx_addr(addr);
-
-	nrf24_rx_mode();
+	
+	nrf24_config(TX_addr, RX_addr);
 }
 
-
+/* Sends char to RF24 */
 void putch(char ch) {
-	if (radio_mode) {
-		static uint8_t pkt_len = 0;
-		static uint8_t pkt_buf[32];
 
-		pkt_buf[pkt_len++] = ch;
+	static uint8_t tx_pkt_len = 0; /* Number of bytes in the local buffer */
+	static uint8_t tx_pkt_buf[32]; /* Local buffer to store bytes before sending */
 
-		if (ch == STK_OK || pkt_len == pkt_max_len) {
-			#ifdef SEQN
-			uint8_t cnt = 128;
+	tx_pkt_buf[tx_pkt_len++] = ch; /* Fills the local buffer */
 
-			while (--cnt) {
-				/* Wait 4ms to allow the remote end to switch to Rx mode */
-				my_delay(4);
-
-				nrf24_tx(pkt_buf, pkt_len);
-				if (!nrf24_tx_result_wait())
-				break;
-
-				/*
-				* TODO: also check if there's anything in the Rx FIFO - that
-				* would indicate that the other side has actually received our
-				* packet but the ACK may have been lost instead.  In any case
-				* the other side is not listening for what we're re-sending,
-				* maybe has given up and is resending the full command which
-				* is ok.
-				*/
-			}
-
-			pkt_len = 1;
-			pkt_buf[0] ++;
-			#else
+	if (ch == STK_OK || tx_pkt_len == NRF24_MAX_PAYLOAD) { /* When last message or buffer full */
+		while (1) { /* Send buffer until received */
+			
+			nrf24_sendData(tx_pkt_buf, tx_pkt_len);
+			if (nrf24_wait_tx_result()==NRF24_MESSAGE_SENT)
+				break; /* Payload sent and acknowledged*/
+			
 			/* Wait 4ms to allow the remote end to switch to Rx mode */
-			my_delay(4);
-
-			nrf24_tx(pkt_buf, pkt_len);
-			nrf24_tx_result_wait();
-
-			pkt_len = 0;
-			#endif
+			_delay_ms(4);
 		}
 
-		return;
+		/* Reset the local buffer */
+		tx_pkt_len = 1; /* Only the identifier is stored */
+		tx_pkt_buf[0] ++; /* Packet Identifier */
 	}
-	while (!(UART_SRA & _BV(UDRE0)));
-	UART_UDR = ch;
 }
 
+/* Get char from RF24 */
 uint8_t getch(void) {
 	uint8_t ch;
 
-	static uint8_t pkt_len = 0, pkt_start = 0;
-	static uint8_t pkt_buf[32];
-
-	LED_PIN |= _BV(LED);
-
+	static uint8_t pkt_id = 0; /* Number of the packet we are currently receiving */
+	static uint8_t rx_pkt_len = 0; /* Number of bytes in the local buffer */
+	static uint8_t rx_pkt_ptr =0; /* Start of data in the buffer */
+	static uint8_t rx_pkt_buf[32]; /* Local buffer to store bytes before sending */
 
 	while(1) {
-		if (UART_SRA & _BV(RXC0)) {
-			if (!(UART_SRA & _BV(FE0))) {
-				/*
-				* A Framing Error indicates (probably) that something is talking
-				* to us at the wrong bit rate.  Assume that this is because it
-				* expects to be talking to the application, and DON'T reset the
-				* watchdog.  This should cause the bootloader to abort and run
-				* the application "soon", if it keeps happening.  (Note that we
-				* don't care that an invalid char is returned...)
-				*/
-				watchdogReset();
-			}
-
-			ch = UART_UDR;
-			break;
-		}
-
-		if (radio_present && (pkt_len || nrf24_rx_fifo_data())) {
+		/* If there is data to read */
+		if (nrf24_dataReady()==NRF24_DATA_AVAILABLE){
 			watchdogReset();
 
-			if (!pkt_len) {
-				#ifdef SEQN
-				static uint8_t seqn = 0xff;
-				#define START 1
-				#else
-				#define START 0
-				#endif
-				nrf24_rx_read(pkt_buf, &pkt_len);
-				pkt_start = START;
-
-				if (!radio_mode && pkt_len >= 4) {
-					/*
-					* If this is the first packet we receive, the first three bytes
-					* should contain the sender's address.
-					*/
-					nrf24_set_tx_addr(pkt_buf);
-					pkt_max_len = pkt_buf[3];
-					pkt_len -= 4;
-					pkt_start += 4;
-
-					radio_mode = 1;
-				} else if (!radio_mode)
-				pkt_len = 0;
-
-				if (!pkt_len)
-				continue;
-
-				#ifdef SEQN
-				if (pkt_buf[0] == seqn) {
-					pkt_len = 0;
+			if (rx_pkt_len==0) { /* If our local buffer is empty, get more data */
+				
+				nrf24_getData(rx_pkt_buf, &rx_pkt_len);
+				
+				if (rx_pkt_buf[0] == pkt_id) { /* We have already received this packet before */
+					rx_pkt_len = 0;
 					continue;
 				}
-
-				seqn = pkt_buf[0];
-				pkt_len--;
-				#endif
+				else
+				{
+					pkt_id=rx_pkt_buf[0]; /* It's a new packet, update the current ID */
+				}
 			}
-
-			ch = pkt_buf[pkt_start ++];
-			pkt_len --;
-			break;
+			else
+			{
+				ch=rx_pkt_buf[rx_pkt_ptr++]; /* Grab next byte in the buffer */
+				rx_pkt_len--;
+				if(rx_pkt_len==0) /* We have read all the bytes in the buffer */
+				{
+					rx_pkt_ptr=0; /* Reset the data pointer */
+				}
+			}
+			return ch;
 		}
-}
-
-	return ch;
+	}
 }
 
 void getNch(uint8_t count) {
@@ -534,11 +456,7 @@ void watchdogConfig(uint8_t x) {
 }
 
 void appStart(uint8_t rstFlags) {
-	#ifdef FORCE_WATCHDOG
 	watchdogConfig(WATCHDOG_4S);
-	#else
-	watchdogConfig(WATCHDOG_OFF);
-	#endif
 
 	// save the reset flags in the designated register
 	//  This can be saved in a main program by putting code in .init0 (which
