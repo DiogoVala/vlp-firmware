@@ -6,6 +6,8 @@
 #include "boot.h"
 #include "pin_defs.h"
 #include "stk500.h"
+#include "../../Common/spi.h"
+#include "../../Common/nrf24l01.h"
 
 #define OPTIBOOT_MAJVER 5
 #define OPTIBOOT_MINVER 0
@@ -16,8 +18,6 @@
 asm("  .section .version\n"
 "optiboot_version:  .word " MAKEVER(OPTIBOOT_MAJVER, OPTIBOOT_MINVER) "\n"
 "  .section .text\n");
-
-#define SUPPORT_EEPROM
 
 #ifndef F_CPU
 #define F_CPU 16000000
@@ -95,21 +95,11 @@ static void radio_init(void);
 # define UART_SRL UBRR0L
 # define UART_UDR UDR0
 
-static void eeprom_write(uint16_t addr, uint8_t val) {
-	while (!eeprom_is_ready());
-
-	EEAR = addr;
-	EEDR = val;
-	EECR |= 1 << EEMPE;	/* Write logical one to EEMPE */
-	EECR |= 1 << EEPE;	/* Start eeprom write by setting EEPE */
-}
-
+/* Function to read EEPROM (Used to read addresses) */
 static uint8_t eeprom_read(uint16_t addr) {
 	while (!eeprom_is_ready());
-
 	EEAR = addr;
 	EECR |= 1 << EERE;	/* Start eeprom read by writing EERE */
-
 	return EEDR;
 }
 
@@ -145,7 +135,6 @@ int main(void) {
 	* a buggy program is uploaded, the board resets automatically.  We
 	* still use the watchdog to reset the bootloader too.
 	*/
-	#ifdef FORCE_WATCHDOG
 	SP = RAMEND - 32;
 	#define reset_cause (*(uint8_t *) (RAMEND - 16 - 4))
 	#define marker (*(uint32_t *) (RAMEND - 16 - 3))
@@ -163,14 +152,6 @@ int main(void) {
 	/* Save the original reset reason to pass on to the applicatoin */
 	reset_cause = ch;
 	marker = 0xdeadbeef;
-	#else
-	
-	// Adaboot no-wait mod
-	ch = MCUSR;
-	MCUSR = 0;
-	if (ch & (_BV(WDRF) | _BV(PORF) | _BV(BORF)))
-	appStart(ch);
-	#endif
 
 	// Prepare .data
 	asm volatile (
@@ -269,9 +250,6 @@ int main(void) {
 			length = getch();
 			type = getch();
 
-			#ifdef SUPPORT_EEPROM
-			if (type == 'F')		/* Flash */
-			#endif
 			// If we are in RWW section, immediately start page erase
 			if (address < NRWWSTART) __boot_page_erase_short((uint16_t)(void*)address);
 
@@ -280,9 +258,7 @@ int main(void) {
 			do *bufPtr++ = getch();
 			while (--length);
 
-			#ifdef SUPPORT_EEPROM
 			if (type == 'F') {	/* Flash */
-				#endif
 				// If we are in NRWW section, page erase has to be delayed until now.
 				// Todo: Take RAMPZ into account (not doing so just means that we will
 				//  treat the top of both "pages" of flash as NRWW, for a slight speed
@@ -316,20 +292,6 @@ int main(void) {
 				// Reenable read access to flash
 				boot_rww_enable();
 				#endif
-				#ifdef SUPPORT_EEPROM
-				} else if (type == 'E') {	/* EEPROM */
-				// Read command terminator, start reply
-				verifySpace();
-
-				length = bufPtr - buff;
-				addrPtr = address;
-				bufPtr = buff;
-				while (length--) {
-					watchdogReset();
-					eeprom_write(addrPtr++, *bufPtr++);
-				}
-			}
-			#endif
 		}
 		/* Read memory block mode, length is big endian.  */
 		else if(ch == STK_READ_PAGE) {
@@ -342,9 +304,6 @@ int main(void) {
 
 			verifySpace();
 			/* TODO: putNch */
-			#ifdef SUPPORT_EEPROM
-			if (type == 'F')
-			#endif
 			do {
 				#if defined(RAMPZ)
 				// Since RAMPZ should already be set, we need to use EPLM directly.
@@ -359,11 +318,6 @@ int main(void) {
 				#endif
 				putch(ch);
 			} while (--length);
-			#ifdef SUPPORT_EEPROM
-			else if (type == 'E')
-			while (length--)
-			putch(eeprom_read(address++));
-			#endif
 		}
 
 		/* Get device signature bytes  */
@@ -398,13 +352,13 @@ static uint8_t pkt_max_len = 32;
 #define CE_PIN		(1 << 0)
 #define CSN_PIN		(1 << 2)
 
-#include "spi.h"
-#include "nrf24.h"
+
 
 #define SEQN
 
 static void radio_init(void) {
 	uint8_t addr[3] = {'L', 'M', '1'};
+		
 
 	spi_init();
 
@@ -595,7 +549,6 @@ void appStart(uint8_t rstFlags) {
 	// Jump to RST vector
 	"clr r30\n"
 	"clr r31\n"
-	#endif
 	"ijmp\n"
 	);
 }

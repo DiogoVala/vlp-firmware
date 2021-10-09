@@ -30,15 +30,15 @@
     <EraseKey />
     <AsfFrameworkConfig>
       <framework-data xmlns="">
-  <options />
-  <configurations />
-  <files />
-  <documentation help="" />
-  <offline-documentation help="" />
-  <dependencies>
-    <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.49.1" />
-  </dependencies>
-</framework-data>
+        <options />
+        <configurations />
+        <files />
+        <documentation help="" />
+        <offline-documentation help="" />
+        <dependencies>
+          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.49.1" />
+        </dependencies>
+      </framework-data>
     </AsfFrameworkConfig>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -102,6 +102,14 @@
     <Compile Include="..\..\Common\nrf24l01_config.h">
       <SubType>compile</SubType>
       <Link>nrf24l01_config.h</Link>
+    </Compile>
+    <Compile Include="..\..\Common\spi.c">
+      <SubType>compile</SubType>
+      <Link>spi.c</Link>
+    </Compile>
+    <Compile Include="..\..\Common\spi.h">
+      <SubType>compile</SubType>
+      <Link>spi.h</Link>
     </Compile>
     <Compile Include="boot.h">
       <SubType>compile</SubType>
