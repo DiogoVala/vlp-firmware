@@ -59,7 +59,6 @@ void wait_timeout(void) __attribute__ ((__noreturn__));
 void appStart(uint8_t rstFlags) __attribute__ ((naked))  __attribute__ ((__noreturn__));
 void radio_init(void);
 
-
 /*
 * NRWW memory
 * Addresses below NRWW (Non-Read-While-Write) can be programmed while
@@ -96,6 +95,13 @@ void radio_init(void);
 # define UART_SRC UCSR0C
 # define UART_SRL UBRR0L
 # define UART_UDR UDR0
+
+/* Radio macros */
+#define RADIO_ON 1
+#define RADIO_OFF 0
+
+/* Variables */
+uint8_t radio_mode=RADIO_OFF;
 
 /* Function to read EEPROM (Used to read addresses) */
 static uint8_t eeprom_read(uint16_t addr) {
@@ -344,13 +350,6 @@ int main(void) {
 	}
 }
 
-#define CE_DDR		DDRB
-#define CE_PORT		PORTB
-#define CSN_DDR		DDRB
-#define CSN_PORT	PORTB
-#define CE_PIN		(1 << 0)
-#define CSN_PIN		(1 << 2)
-
 void radio_init(void) {
 	uint8_t RX_addr[3] = {'L', 'M', '1'};
 	uint8_t TX_addr[3] = {'M', 'T', 'R'};
@@ -368,26 +367,32 @@ void putch(char ch) {
 
 	tx_pkt_buf[tx_pkt_len++] = ch; /* Fills the local buffer */
 
-	if (ch == STK_OK || tx_pkt_len == NRF24_MAX_PAYLOAD) { /* When last message or buffer full */
-		while (1) { /* Send buffer until received */
+	if(radio_mode == RADIO_ON){
+		if (ch == STK_OK || tx_pkt_len == NRF24_MAX_PAYLOAD) { /* When last message or buffer full */
+			while (1) { /* Send buffer until received */
 			
-			nrf24_sendData(tx_pkt_buf, tx_pkt_len);
-			if (nrf24_wait_tx_result()==NRF24_MESSAGE_SENT)
+				nrf24_sendData(tx_pkt_buf, tx_pkt_len);
+				if (nrf24_wait_tx_result()==NRF24_MESSAGE_SENT)
 				break; /* Payload sent and acknowledged*/
 			
-			/* Wait 4ms to allow the remote end to switch to Rx mode */
-			_delay_ms(4);
-		}
+				/* Wait 4ms to allow the remote end to switch to Rx mode */
+				_delay_ms(4);
+			}
 
-		/* Reset the local buffer */
-		tx_pkt_len = 1; /* Only the identifier is stored */
-		tx_pkt_buf[0] ++; /* Packet Identifier */
+			/* Reset the local buffer */
+			tx_pkt_len = 1; /* Only the identifier is stored */
+			tx_pkt_buf[0] ++; /* Packet Identifier */
+		}
+	}
+	else{
+		while (!(UART_SRA & _BV(UDRE0)));
+		UART_UDR = ch;
 	}
 }
 
 /* Get char from RF24 */
 uint8_t getch(void) {
-	uint8_t ch;
+	uint8_t ch='\0';
 
 	static uint8_t pkt_id = 0; /* Number of the packet we are currently receiving */
 	static uint8_t rx_pkt_len = 0; /* Number of bytes in the local buffer */
@@ -395,9 +400,28 @@ uint8_t getch(void) {
 	static uint8_t rx_pkt_buf[32]; /* Local buffer to store bytes before sending */
 
 	while(1) {
-		/* If there is data to read */
-		if (nrf24_dataReady()==NRF24_DATA_AVAILABLE){
+		
+		/* First we try to get char from UART*/
+		if (UART_SRA & _BV(RXC0)) {
+			if (!(UART_SRA & _BV(FE0))) {
+				/*
+				* A Framing Error indicates (probably) that something is talking
+				* to us at the wrong bit rate.  Assume that this is because it
+				* expects to be talking to the application, and DON'T reset the
+				* watchdog.  This should cause the bootloader to abort and run
+				* the application "soon", if it keeps happening.  (Note that we
+				* don't care that an invalid char is returned...)
+				*/
+				watchdogReset();
+			}
+			ch = UART_UDR;
+			break;
+		}
+		
+		/* If there is data in the local buffer or new data in RF24 fifo */
+		if (rx_pkt_len || nrf24_dataReady()==NRF24_DATA_AVAILABLE){
 			watchdogReset();
+			radio_mode=RADIO_ON; /* From now on, we're in radio mode */
 
 			if (rx_pkt_len==0) { /* If our local buffer is empty, get more data */
 				
@@ -421,8 +445,8 @@ uint8_t getch(void) {
 					rx_pkt_ptr=0; /* Reset the data pointer */
 				}
 			}
-			return ch;
 		}
+		return ch;
 	}
 }
 
