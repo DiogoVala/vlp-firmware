@@ -16,7 +16,7 @@ asm("  .section .version\n"
     "  .section .text\n");
 
 
-/* set the UART baud rate defaults */
+/* UART Settings */
 #ifndef BAUD_RATE
 #if F_CPU >= 8000000L
 #define BAUD_RATE   115200L // Highest rate Avrdude win32 will support
@@ -29,19 +29,23 @@ asm("  .section .version\n"
 #endif
 #endif
 
-#define BAUD_SETTING (( (F_CPU + BAUD_RATE * 4L) / ((BAUD_RATE * 8L))) - 1 )
-#define BAUD_ACTUAL (F_CPU/(8 * ((BAUD_SETTING)+1)))
-#define BAUD_ERROR (( 100*(BAUD_RATE - BAUD_ACTUAL) ) / BAUD_RATE)
+#define BAUD_PRESCALER (((F_CPU / (BAUD_RATE * 16UL))) - 1)
+#define ASYNCHRONOUS (0<<UMSEL00) // USART Mode Selection
 
-#if BAUD_ERROR >= 5
-#error BAUD_RATE error greater than 5%
-#elif BAUD_ERROR <= -5
-#error BAUD_RATE error greater than -5%
-#elif BAUD_ERROR >= 2
-#warning BAUD_RATE error greater than 2%
-#elif BAUD_ERROR <= -2
-#warning BAUD_RATE error greater than -2%
-#endif
+#define DISABLED    (0<<UPM00)
+#define EVEN_PARITY (2<<UPM00)
+#define ODD_PARITY  (3<<UPM00)
+#define PARITY_MODE  DISABLED // USART Parity Bit Selection
+
+#define ONE_BIT (0<<USBS0)
+#define TWO_BIT (1<<USBS0)
+#define STOP_BIT ONE_BIT      // USART Stop Bit Selection
+
+#define FIVE_BIT  (0<<UCSZ00)
+#define SIX_BIT   (1<<UCSZ00)
+#define SEVEN_BIT (2<<UCSZ00)
+#define EIGHT_BIT (3<<UCSZ00)
+#define DATA_BIT   EIGHT_BIT  // USART Data Bit Selection
 
 /* Watchdog settings */
 #define WATCHDOG_OFF    (0)
@@ -104,10 +108,10 @@ void appStart(uint8_t rstFlags) __attribute__ ((naked))  __attribute__ ((__noret
 static void delay8(uint16_t count);
 
 /***************************************************************************/
-/*						 		Main Function							   */
+/*						 					Main Function						      	   */
 /***************************************************************************/
 /* Handles the communcation with AVRDUDE and the memory operations when    */
-/* flashing the device. 												   */
+/* flashing the device. 												  			      */
 
 int main(void) {
 	uint8_t ch;
@@ -134,8 +138,8 @@ int main(void) {
 	asm volatile ("clr __zero_reg__");
 
 	SP = RAMEND - 32;
-	#define reset_cause (*(uint8_t *) (RAMEND - 16 - 4))
-	#define marker (*(uint32_t *) (RAMEND - 16 - 3))
+#define reset_cause (*(uint8_t *) (RAMEND - 16 - 4))
+#define marker (*(uint32_t *) (RAMEND - 16 - 3))
 
 	/* GCC does loads Y with SP at the beginning, repeat it with the new SP */
 	asm volatile ("in r28, 0x3d");
@@ -153,27 +157,27 @@ int main(void) {
 
 	// Prepare .data
 	asm volatile (
-	  "	ldi	r17, hi8(__data_end)\n"
-	  "	ldi	r26, lo8(__data_start)\n"
-	  "	ldi	r27, hi8(__data_start)\n"
-	  "	ldi	r30, lo8(__data_load_start)\n"
-	  "	ldi	r31, hi8(__data_load_start)\n"
-	  "	rjmp	cpchk\n"
-	  "copy:	lpm	__tmp_reg__, Z+\n"
-	  "	st	X+, __tmp_reg__\n"
-	  "cpchk:	cpi	r26, lo8(__data_end)\n"
-	  "	cpc	r27, r17\n"
-	  "	brne	copy\n");
+	   "	ldi	r17, hi8(__data_end)\n"
+	   "	ldi	r26, lo8(__data_start)\n"
+	   "	ldi	r27, hi8(__data_start)\n"
+	   "	ldi	r30, lo8(__data_load_start)\n"
+	   "	ldi	r31, hi8(__data_load_start)\n"
+	   "	rjmp	cpchk\n"
+	   "copy:	lpm	__tmp_reg__, Z+\n"
+	   "	st	X+, __tmp_reg__\n"
+	   "cpchk:	cpi	r26, lo8(__data_end)\n"
+	   "	cpc	r27, r17\n"
+	   "	brne	copy\n");
 	// Prepare .bss
 	asm volatile (
-	  "	ldi	r17, hi8(__bss_end)\n"
-	  "	ldi	r26, lo8(__bss_start)\n"
-	  "	ldi	r27, hi8(__bss_start)\n"
-	  "	rjmp	clchk\n"
-	  "clear:	st	X+, __zero_reg__\n"
-	  "clchk:	cpi	r26, lo8(__bss_end)\n"
-	  "	cpc	r27, r17\n"
-	  "	brne	clear\n");
+	   "	ldi	r17, hi8(__bss_end)\n"
+	   "	ldi	r26, lo8(__bss_start)\n"
+	   "	ldi	r27, hi8(__bss_start)\n"
+	   "	rjmp	clchk\n"
+	   "clear:	st	X+, __zero_reg__\n"
+	   "clchk:	cpi	r26, lo8(__bss_end)\n"
+	   "	cpc	r27, r17\n"
+	   "	brne	clear\n");
 
 	/*
 	 * Disable pullups that may have been enabled by a user program.
@@ -183,11 +187,16 @@ int main(void) {
 	DDRD |= 3;
 	PORTD &= ~3;
 
-	/* UART setup */
-	UCSR0A = _BV(U2X0); //Double speed mode USART0
+		/* Set Baud Rate */
+	UBRR0H = (uint8_t)(BAUD_PRESCALER >> 8);
+	UBRR0L = (uint8_t) BAUD_PRESCALER;
+	
+	/* Set Frame Format */
+	UCSR0C = ASYNCHRONOUS | PARITY_MODE | STOP_BIT | DATA_BIT;
+	
+	/* Enable Receiver and Transmitter */
 	UCSR0B = _BV(RXEN0) | _BV(TXEN0);
-	UCSR0C = _BV(UCSZ00) | _BV(UCSZ01);
-	UBRR0L = (uint8_t)( (F_CPU + BAUD_RATE * 4L) / (BAUD_RATE * 8L) - 1 );
+
 
 	/* Setup radio module */
 	radio_init();
@@ -245,11 +254,9 @@ int main(void) {
 			// PROGRAM PAGE - we support flash and EEPROM programming
 			uint8_t *bufPtr;
 			uint16_t addrPtr;
-			uint8_t type;
 
 			getch();			/* getlen() */
 			length = getch();
-			type = getch();
 
 			// If we are in RWW section, immediately start page erase
 			if (address < NRWWSTART) __boot_page_erase_short((uint16_t)(void*)address);
@@ -288,11 +295,8 @@ int main(void) {
 		/* Read memory block mode, length is big endian.  */
 		else if (ch == STK_READ_PAGE) {
 			// READ PAGE - we only read flash and EEPROM
-			uint8_t type;
-
 			getch();			/* getlen() */
 			length = getch();
-			type = getch();
 
 			verifySpace();
 			/* TODO: putNch */
@@ -359,7 +363,13 @@ static void radio_init(void) {
 	uint8_t TX_addr[3] = {'M', 'T', 'R'};
 
 	spi_init();
-	
+
+	uint8_t ch;
+	while (1) {
+		ch = getch();
+		putch(ch);
+	}
+
 	nrf24_config(TX_addr, RX_addr);
 }
 
@@ -368,17 +378,17 @@ void putch(char ch) {
 	static uint8_t tx_pkt_len = 0; /* Number of bytes in the local buffer */
 	static uint8_t tx_pkt_buf[32]; /* Local buffer to store bytes before sending */
 
-	if(radio_mode == RADIO_ON){
+	if (radio_mode == RADIO_ON) {
 
 		tx_pkt_buf[tx_pkt_len++] = ch; /* Fills the local buffer */
 
-		if (ch == STK_OK || tx_pkt_len == NRF24_MAX_PAYLOAD-1) { /* When last message or buffer full */
+		if (ch == STK_OK || tx_pkt_len == NRF24_MAX_PAYLOAD - 1) { /* When last message or buffer full */
 			while (1) { /* Send buffer until received */
-				
+
 				nrf24_sendData(tx_pkt_buf, tx_pkt_len);
-				if (nrf24_wait_tx_result()==NRF24_MESSAGE_SENT)
-				break; /* Payload sent and acknowledged*/
-				
+				if (nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
+					break; /* Payload sent and acknowledged*/
+
 				/* Wait 4ms to allow the remote end to switch to Rx mode */
 				my_delay(4);
 			}
@@ -388,64 +398,54 @@ void putch(char ch) {
 			tx_pkt_buf[0] ++; /* Packet Identifier */
 		}
 	}
-	else{
+	else {
 		while (!(UCSR0A & _BV(UDRE0)));
 		UDR0 = ch;
 	}
 }
 
 uint8_t getch(void) {
-	uint8_t ch='\0';
+	uint8_t ch = '\0';
 	static uint8_t pkt_id = 0; /* Number of the packet we are currently receiving */
 	static uint8_t rx_pkt_len = 0; /* Number of bytes in the local buffer */
 	static uint8_t rx_pkt_ptr = 1; /* Start of data in the buffer */
 	static uint8_t rx_pkt_buf[32]; /* Local buffer to store bytes before sending */
 
 	while (1) {
-		if (UCSR0A & _BV(RXC0)) {
-			if (!(UCSR0A & _BV(FE0))) {
-				/*
-				 * A Framing Error indicates (probably) that something is talking
-				 * to us at the wrong bit rate.  Assume that this is because it
-				 * expects to be talking to the application, and DON'T reset the
-				 * watchdog.  This should cause the bootloader to abort and run
-				 * the application "soon", if it keeps happening.  (Note that we
-				 * don't care that an invalid char is returned...)
-				 */
-				watchdogReset();
-			}
+		if ((UCSR0A & _BV(RXC0)) && !(UCSR0A & FE0) && !(UCSR0A & UPE0)) {
+			watchdogReset();
 			ch = UDR0;
 			break;
 		}
 
 		/* If there is data in the local buffer or new data in RF24 fifo */
-		if (rx_pkt_len || nrf24_dataReady()==NRF24_DATA_AVAILABLE){
+		if (rx_pkt_len || nrf24_dataReady() == NRF24_DATA_AVAILABLE) {
 			watchdogReset();
-			radio_mode=RADIO_ON; /* From now on, we're in radio mode */
+			radio_mode = RADIO_ON; /* From now on, we're in radio mode */
 
 			/* If our local buffer is empty, get more data */
-			if (rx_pkt_len==0) { 
-		
+			if (rx_pkt_len == 0) {
+
 				nrf24_getData(rx_pkt_buf, &rx_pkt_len);
-		
+
 				if (rx_pkt_buf[0] == pkt_id) { /* We have already received this packet before */
 					rx_pkt_len = 0;
 				}
 				else
 				{
-					pkt_id=rx_pkt_buf[0]; /* It's a new packet, update the current ID */
+					pkt_id = rx_pkt_buf[0]; /* It's a new packet, update the current ID */
 				}
 			}
 
 			/* If there is data in the local buffer */
-			if (rx_pkt_len) 
+			if (rx_pkt_len)
 			{
-				ch=rx_pkt_buf[rx_pkt_ptr]; /* Grab next byte in the buffer */
+				ch = rx_pkt_buf[rx_pkt_ptr]; /* Grab next byte in the buffer */
 				rx_pkt_ptr++;
 				rx_pkt_len--;
-				if(rx_pkt_len==0) /* We have read all the bytes in the buffer */
+				if (rx_pkt_len == 0) /* We have read all the bytes in the buffer */
 				{
-					rx_pkt_ptr=1; /* Reset the data pointer */
+					rx_pkt_ptr = 1; /* Reset the data pointer */
 				}
 				break;
 			}
@@ -480,7 +480,7 @@ void verifySpace(void) {
 // Watchdog functions. These are only safe with interrupts turned off.
 void watchdogReset() {
 	__asm__ __volatile__ (
-	  "wdr\n"
+	   "wdr\n"
 	);
 }
 
@@ -498,23 +498,23 @@ void appStart(uint8_t rstFlags) {
 	//  executes before normal c init code) to save R2 to a global variable.
 	__asm__ __volatile__ ("mov r2, %0\n" :: "r" (rstFlags));
 	__asm__ __volatile__ (
-	  // Jump to RST vector
-	  "clr r30\n"
-	  "clr r31\n"
-	  "ijmp\n"
+	   // Jump to RST vector
+	   "clr r30\n"
+	   "clr r31\n"
+	   "ijmp\n"
 	);
 }
 
 static void delay8(uint16_t count) {
 	while (count --)
 		__asm__ __volatile__ (
-			"\tnop\n"
-			"\tnop\n"
-			"\tnop\n"
-			"\tnop\n"
-			"\tnop\n"
-			"\tnop\n"
-			"\tnop\n"
-			"\twdr\n"
+		   "\tnop\n"
+		   "\tnop\n"
+		   "\tnop\n"
+		   "\tnop\n"
+		   "\tnop\n"
+		   "\tnop\n"
+		   "\tnop\n"
+		   "\twdr\n"
 		);
 }
