@@ -17,19 +17,23 @@ asm("  .section .version\n"
 
 
 /* UART Settings */
-#ifndef BAUD_RATE
+/*#ifndef BAUD_RATE
 #if F_CPU >= 8000000L
-#define BAUD_RATE   115200L // Highest rate Avrdude win32 will support
+#define BAUD_RATE 115200L // Highest rate Avrdude win32 will support
 #elsif F_CPU >= 1000000L
-#define BAUD_RATE   9600L   // 19200 also supported, but with significant error
+#define BAUD_RATE 9600L   // 19200 also supported, but with significant error
 #elsif F_CPU >= 128000L
-#define BAUD_RATE   4800L   // Good for 128kHz internal RC
+#define BAUD_RATE 4800L   // Good for 128kHz internal RC
 #else
 #define BAUD_RATE 1200L     // Good even at 32768Hz
 #endif
-#endif
+#endif*/
+
+#define F_CPU 16000000UL
+#define BAUD_RATE 9600
 
 #define BAUD_PRESCALER (((F_CPU / (BAUD_RATE * 16UL))) - 1)
+
 #define ASYNCHRONOUS (0<<UMSEL00) // USART Mode Selection
 
 #define DISABLED    (0<<UPM00)
@@ -45,7 +49,7 @@ asm("  .section .version\n"
 #define SIX_BIT   (1<<UCSZ00)
 #define SEVEN_BIT (2<<UCSZ00)
 #define EIGHT_BIT (3<<UCSZ00)
-#define DATA_BIT   EIGHT_BIT  // USART Data Bit Selection
+#define DATA_BIT 	EIGHT_BIT  // USART Data Bit Selection
 
 /* Watchdog settings */
 #define WATCHDOG_OFF    (0)
@@ -364,17 +368,22 @@ static void radio_init(void) {
 
 	spi_init();
 
+	nrf24_config(TX_addr, RX_addr);
+
 	uint8_t ch;
 	while (1) {
 		ch = getch();
 		putch(ch);
 	}
 
-	nrf24_config(TX_addr, RX_addr);
 }
 
 void putch(char ch) {
 
+	while (!(UCSR0A & _BV(UDRE0)));
+	UDR0 = ch;
+	return;
+#if 0
 	static uint8_t tx_pkt_len = 0; /* Number of bytes in the local buffer */
 	static uint8_t tx_pkt_buf[32]; /* Local buffer to store bytes before sending */
 
@@ -402,6 +411,7 @@ void putch(char ch) {
 		while (!(UCSR0A & _BV(UDRE0)));
 		UDR0 = ch;
 	}
+#endif
 }
 
 uint8_t getch(void) {
@@ -413,11 +423,11 @@ uint8_t getch(void) {
 
 	while (1) {
 		if ((UCSR0A & _BV(RXC0)) && !(UCSR0A & FE0) && !(UCSR0A & UPE0)) {
-			watchdogReset();
 			ch = UDR0;
+			watchdogReset();
 			break;
 		}
-
+#if 0
 		/* If there is data in the local buffer or new data in RF24 fifo */
 		if (rx_pkt_len || nrf24_dataReady() == NRF24_DATA_AVAILABLE) {
 			watchdogReset();
@@ -450,6 +460,7 @@ uint8_t getch(void) {
 				break;
 			}
 		}
+		#endif
 	}
 	return ch;
 }

@@ -127,7 +127,7 @@ SIZE           = $(GCCROOT)avr-size
 # appropriate parameters ("-DLED_START_FLASHES=10") to gcc
 #
 
-BAUD_RATE_CMD = -DBAUD_RATE=115200
+BAUD_RATE_CMD = -DBAUD_RATE=9600
 
 COMMON_OPTIONS += -DRADIO_UART=1
 
@@ -170,7 +170,7 @@ COMMON_OPTIONS += -DFORCE_WATCHDOG
 atmega328: TARGET = atmega328
 atmega328: MCU_TARGET = atmega328p
 atmega328: CFLAGS += $(COMMON_OPTIONS)
-atmega328: AVR_FREQ ?= 16000000L
+atmega328: AVR_FREQ ?= 16000000UL
 atmega328: LDSECTIONS  = -Wl,--section-start=.text=0x7$(TEXT_START) -Wl,--section-start=.version=0x7ffe
 atmega328: $(PROGRAM)_atmega328.hex
 atmega328: $(PROGRAM)_atmega328.lst
