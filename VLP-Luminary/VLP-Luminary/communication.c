@@ -27,7 +27,7 @@
 
 /* Debug mode */
 /* Presents useful information in the terminal */
-#define DEBUG_COMM false
+#define DEBUG_COMM 1
 
 uint8_t RX_command_array[NRF24_MAX_PAYLOAD] = {}; /* Received bytes*/
 uint8_t bitstream_byte_array[NRF24_MAX_PAYLOAD] = {0}; /* Received bitstream bytes*/

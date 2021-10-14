@@ -9,7 +9,7 @@
 #ifndef UART_H
 #define UART_H
 
-#define UART_BAUD_RATE 115200
+#define UART_BAUD_RATE 9600
 
 #ifndef F_CPU
 #define F_CPU 16000000UL

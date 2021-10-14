@@ -114,7 +114,7 @@ int main() {
 	return(EXIT_FAILURE);
 }
 
-
+#if 0
 /* Calling the reset function on hardware reset prevents potential 
  * infinite reset loops when watchdog is configured with a short 
  * period. */
@@ -131,3 +131,4 @@ void reset(void)
 	MCUSR = 0; // clear reset flags
 	wdt_disable();
 }
+#endif

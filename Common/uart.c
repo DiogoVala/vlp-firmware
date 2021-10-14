@@ -16,8 +16,8 @@
 void uart_init()
 {
 	/* Set Baud Rate */
-	UBRR0H = BAUD_PRESCALER >> 8;
-	UBRR0L = BAUD_PRESCALER;
+	UBRR0H = (uint8_t)(BAUD_PRESCALER >> 8);
+	UBRR0L = (uint8_t) BAUD_PRESCALER;
 	
 	/* Set Frame Format */
 	UCSR0C = ASYNCHRONOUS | PARITY_MODE | STOP_BIT | DATA_BIT;
@@ -25,6 +25,7 @@ void uart_init()
 	/* Enable Receiver and Transmitter */
 	UCSR0B = _BV(RXEN0) | _BV(TXEN0);
 }
+
 
 void uart_RX_IE(bool RX_IE)
 {

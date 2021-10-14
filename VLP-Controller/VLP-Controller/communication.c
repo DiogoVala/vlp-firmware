@@ -63,13 +63,24 @@ void sendCommand(led_t* ledp) {
 			nrf24_tx_address(TX_addr); /* Update TX address */
 			_delay_us(10);
 			
-			nrf24_sendData(TX_command_array, SIZE_OF_COMMAND); 
+			nrf24_sendData(TX_command_array, SIZE_OF_COMMAND);
+			if(nrf24_wait_tx_result()==NRF24_MESSAGE_SENT)
+				uart_puts("\r\nMessage sent and acknowledged");
+			else
+				uart_puts("\r\nMessage not acknowledged");
 		}
 	}
 	else
 	{
-		TX_addr[NRF24_ADDR_WIDTH-1]=ledp->ledID;
-		nrf24_tx_address(TX_addr);
+		TX_addr[NRF24_ADDR_WIDTH-1]=(uint8_t)(ledp->ledID);
+		//nrf24_tx_address(TX_addr);
+		uint8_t buf[10];
+		for(uint8_t i = 0; i< NRF24_ADDR_WIDTH; i++)
+		{
+			sprintf(buf, "%x ", TX_addr[i]);
+			uart_puts(buf);
+		}
+			
 		_delay_us(10);
 
 		nrf24_sendData(TX_command_array, SIZE_OF_COMMAND);

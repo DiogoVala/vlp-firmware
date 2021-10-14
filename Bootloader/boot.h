@@ -1,5 +1,12 @@
 /* Modified to use out for SPM access
 ** Peter Knight, Optiboot project http://optiboot.googlecode.com
+**
+** Todo: Tidy up
+**
+** "_short" routines execute 1 cycle faster and use 1 less word of flash
+** by using "out" instruction instead of "sts".
+**
+** Additional elpm variants that trust the value of RAMPZ
 */
 
 /* Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007  Eric B. Weddington

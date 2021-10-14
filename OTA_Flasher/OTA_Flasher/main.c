@@ -21,13 +21,18 @@
 #include "../../Common/spi.h"
 #include "../../Common/nrf24l01.h"
 
+#define LED_PIN     PINB
+#define LED	    PINB0
+
 #define	MAX_PLD_SIZE (NRF24_MAX_PAYLOAD - 1) /* Number of data bytes in the payload */
 #define PKT_ID_IDX 0 /* First byte of the payload is reserved for the packet identifier */
 #define PKT_ID_SIZE 1 /* Size of the packet identifier (in bytes) */
 #define FIFO_SIZE 256 /* Number of bytes in the data buffer that stores received bytes from UART */
-#define TX_TIMEOUT 1000000 /* Some generic timeout value if there is no transmission for a while */
+#define TX_TIMEOUT 50000 /* Some generic timeout value if there is no transmission for a while */
 
 static uint8_t reset_cmd[]={0xFF};
+uint8_t RX_addr[NRF24_ADDR_WIDTH]={'M', 'T', 'R'};
+uint8_t TX_addr[NRF24_ADDR_WIDTH]={'L', 'M', '1'};
 
 /* Function prototypes */
 static void uart_to_rf(void);
@@ -46,8 +51,6 @@ void handle_input(uint8_t ch) {
 }
 
 int main() {
-	uint8_t RX_addr[NRF24_ADDR_WIDTH]={'M', 'T', 'R'};
-	uint8_t TX_addr[NRF24_ADDR_WIDTH]={'L', 'M', '1'};
 	uint8_t status;
 	
 	uart_init();
@@ -100,10 +103,12 @@ static void uart_to_rf(void) {
 	uint8_t tx_pkt_len;
 	uint8_t tx_pkt_buf[NRF24_MAX_PAYLOAD];
 	static uint32_t first_tx_timeout = TX_TIMEOUT;
+	uint32_t tx_retries = 10;
 
 	/* If there is no transmission for a while, start over */
 	if (!first_tx_timeout--)
 	{
+		first_tx_timeout=TX_TIMEOUT;
 		first_tx=true;
 	}
 
@@ -114,7 +119,6 @@ static void uart_to_rf(void) {
 		 * Our protocol requires any program running on the board
 		 * to reset if it receives a single 0xff byte.
 		 */
-
 		nrf24_sendData(reset_cmd, 1);
 		nrf24_wait_tx_result();
 
@@ -138,16 +142,15 @@ static void uart_to_rf(void) {
 		
 		tx_fifo.len -= tx_pkt_len;
 		sei();
-
-		while (true) { /* Send until received */
+	
+		while (tx_retries--) { /* Send until received or timeout */
 
 			nrf24_sendData(tx_pkt_buf, tx_pkt_len);
 			if (nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
 				break;
-
+				
 			_delay_ms(4); /* Give the receiver some time to process data */
 		}
-
 		/* Reset timeout */
 		first_tx_timeout = TX_TIMEOUT;
 	}
