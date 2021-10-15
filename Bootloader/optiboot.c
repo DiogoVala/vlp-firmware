@@ -239,10 +239,6 @@ int main(void) {
       uint16_t newAddress;
       newAddress = getch();
       newAddress |= getch() << 8;
-#ifdef RAMPZ
-      // Transfer top bit to RAMPZ
-      RAMPZ = (newAddress & 0x8000) ? 1 : 0;
-#endif
       newAddress <<= 1; // Convert from word address to byte address
       address = newAddress;
       verifySpace();
@@ -289,25 +285,6 @@ int main(void) {
         // If only a partial page is to be programmed, the erase might not be complete.
         // So check that here
         boot_spm_busy_wait();
-
-#ifdef VIRTUAL_BOOT_PARTITION
-        if ((uint16_t)(void*)address == 0) {
-          // This is the reset vector page. We need to live-patch the code so the
-          // bootloader runs.
-          //
-          // Move RESET vector to WDT vector
-          uint16_t vect = buff[0] | (buff[1]<<8);
-          rstVect = vect;
-          wdtVect = buff[8] | (buff[9]<<8);
-          vect -= 4; // Instruction is a relative jump (rjmp), so recalculate.
-          buff[8] = vect & 0xff;
-          buff[9] = vect >> 8;
-
-          // Add jump to bootloader at RESET vector
-          buff[0] = 0x7f;
-          buff[1] = 0xce; // rjmp 0x1d00 instruction
-        }
-#endif
 
         // Copy buffer into programming buffer
         bufPtr = buff;
@@ -359,15 +336,7 @@ int main(void) {
       if (type == 'F')
 #endif
         do {
-#ifdef VIRTUAL_BOOT_PARTITION
-          // Undo vector patch in bottom page so verify passes
-          if (address == 0)       ch=rstVect & 0xff;
-          else if (address == 1)  ch=rstVect >> 8;
-          else if (address == 8)  ch=wdtVect & 0xff;
-          else if (address == 9) ch=wdtVect >> 8;
-          else ch = pgm_read_byte_near(address);
-          address++;
-#elif defined(RAMPZ)
+#ifdef RAMPZ
           // Since RAMPZ should already be set, we need to use EPLM directly.
           // Also, we can use the autoincrement version of lpm to update "address"
           //      do putch(pgm_read_byte_near(address++));
