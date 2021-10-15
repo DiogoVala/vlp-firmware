@@ -130,15 +130,7 @@ int main(void) {
 	register uint16_t address = 0;
 	register uint8_t  length;
 
-	// After the zero init loop, this is the first code to run.
-	//
-	// This code makes the following assumptions:
-	//  No interrupts will execute
-	//  SP points to RAMEND
-	//  r1 contains zero
-	//
-	// If not, uncomment the following instructions:
-	// cli();
+	/* Turn off interrupts */
 	asm volatile ("cli");
 	asm volatile ("clr __zero_reg__");
 
@@ -202,6 +194,7 @@ int main(void) {
 	/* Enable Receiver and Transmitter */
 	UCSR0B = _BV(RXEN0) | _BV(TXEN0);
 
+	/* Double speed*/
 	UCSR0A = _BV(U2X0);
 
 	/* Setup radio module */
@@ -211,127 +204,208 @@ int main(void) {
 	watchdogConfig(WATCHDOG_SELECTION);
 
 	/* Forever loop */
-	for (;;) {
-		/* get character from UART */
-		ch = getch();
+  for (;;) {
+    /* get character from UART */
+    ch = getch();
 
-		if (ch == STK_GET_PARAMETER) {
-			unsigned char which = getch();
-			verifySpace();
-			if (which == 0x82) {
-				/*
-				 * Send optiboot version as "minor SW version"
-				 */
-				putch(OPTIBOOT_MINVER);
-			} else if (which == 0x81) {
-				putch(OPTIBOOT_MAJVER);
-			} else {
-				/*
-				 * GET PARAMETER returns a generic 0x03 reply for
-							 * other parameters - enough to keep Avrdude happy
-				 */
-				putch(0x03);
-			}
-		}
-		else if (ch == STK_SET_DEVICE) {
-			// SET DEVICE is ignored
-			getNch(20);
-		}
-		else if (ch == STK_SET_DEVICE_EXT) {
-			// SET DEVICE EXT is ignored
-			getNch(5);
-		}
-		else if (ch == STK_LOAD_ADDRESS) {
-			// LOAD ADDRESS
-			uint16_t newAddress;
-			newAddress = getch();
-			newAddress |= getch() << 8;
-			newAddress <<= 1; // Convert from word address to byte address
-			address = newAddress;
-			verifySpace();
-		}
-		else if (ch == STK_UNIVERSAL) {
-			// UNIVERSAL command is ignored
-			getNch(4);
-			putch(0x00);
-		}
-		/* Write memory, length is big endian and is in bytes */
-		else if (ch == STK_PROG_PAGE) {
-			// PROGRAM PAGE - we support flash and EEPROM programming
-			uint8_t *bufPtr;
-			uint16_t addrPtr;
+    if(ch == STK_GET_PARAMETER) {
+      unsigned char which = getch();
+      verifySpace();
+      if (which == 0x82) {
+	/*
+	 * Send optiboot version as "minor SW version"
+	 */
+	putch(OPTIBOOT_MINVER);
+      } else if (which == 0x81) {
+	  putch(OPTIBOOT_MAJVER);
+      } else {
+	/*
+	 * GET PARAMETER returns a generic 0x03 reply for
+         * other parameters - enough to keep Avrdude happy
+	 */
+	putch(0x03);
+      }
+    }
+    else if(ch == STK_SET_DEVICE) {
+      // SET DEVICE is ignored
+      getNch(20);
+    }
+    else if(ch == STK_SET_DEVICE_EXT) {
+      // SET DEVICE EXT is ignored
+      getNch(5);
+    }
+    else if(ch == STK_LOAD_ADDRESS) {
+      // LOAD ADDRESS
+      uint16_t newAddress;
+      newAddress = getch();
+      newAddress |= getch() << 8;
+#ifdef RAMPZ
+      // Transfer top bit to RAMPZ
+      RAMPZ = (newAddress & 0x8000) ? 1 : 0;
+#endif
+      newAddress <<= 1; // Convert from word address to byte address
+      address = newAddress;
+      verifySpace();
+    }
+    else if(ch == STK_UNIVERSAL) {
+      // UNIVERSAL command is ignored
+      getNch(4);
+      putch(0x00);
+    }
+    /* Write memory, length is big endian and is in bytes */
+    else if(ch == STK_PROG_PAGE) {
+      // PROGRAM PAGE - we support flash and EEPROM programming
+      uint8_t *bufPtr;
+      uint16_t addrPtr;
+      uint8_t type;
 
-			getch();			/* getlen() */
-			length = getch();
+      getch();			/* getlen() */
+      length = getch();
+      type = getch();
 
-			// If we are in RWW section, immediately start page erase
-			if (address < NRWWSTART) __boot_page_erase_short((uint16_t)(void*)address);
+#ifdef SUPPORT_EEPROM
+      if (type == 'F')		/* Flash */
+#endif
+        // If we are in RWW section, immediately start page erase
+        if (address < NRWWSTART) __boot_page_erase_short((uint16_t)(void*)address);
 
-			// While that is going on, read in page contents
-			bufPtr = buff;
-			do *bufPtr++ = getch();
-			while (--length);
+      // While that is going on, read in page contents
+      bufPtr = buff;
+      do *bufPtr++ = getch();
+      while (--length);
 
-			// If we are in NRWW section, page erase has to be delayed until now.
-			if (address >= NRWWSTART) __boot_page_erase_short((uint16_t)(void*)address);
+#ifdef SUPPORT_EEPROM
+      if (type == 'F') {	/* Flash */
+#endif
+        // If we are in NRWW section, page erase has to be delayed until now.
+        // Todo: Take RAMPZ into account (not doing so just means that we will
+        //  treat the top of both "pages" of flash as NRWW, for a slight speed
+        //  decrease, so fixing this is not urgent.)
+        if (address >= NRWWSTART) __boot_page_erase_short((uint16_t)(void*)address);
 
-			// Read command terminator, start reply
-			verifySpace();
+        // Read command terminator, start reply
+        verifySpace();
 
-			// If only a partial page is to be programmed, the erase might not be complete.
-			// So check that here
-			boot_spm_busy_wait();
+        // If only a partial page is to be programmed, the erase might not be complete.
+        // So check that here
+        boot_spm_busy_wait();
 
-			// Copy buffer into programming buffer
-			bufPtr = buff;
-			addrPtr = (uint16_t)(void*)address;
-			ch = SPM_PAGESIZE / 2;
-			do {
-				uint16_t a;
-				a = *bufPtr++;
-				a |= (*bufPtr++) << 8;
-				__boot_page_fill_short((uint16_t)(void*)addrPtr, a);
-				addrPtr += 2;
-			} while (--ch);
+#ifdef VIRTUAL_BOOT_PARTITION
+        if ((uint16_t)(void*)address == 0) {
+          // This is the reset vector page. We need to live-patch the code so the
+          // bootloader runs.
+          //
+          // Move RESET vector to WDT vector
+          uint16_t vect = buff[0] | (buff[1]<<8);
+          rstVect = vect;
+          wdtVect = buff[8] | (buff[9]<<8);
+          vect -= 4; // Instruction is a relative jump (rjmp), so recalculate.
+          buff[8] = vect & 0xff;
+          buff[9] = vect >> 8;
 
-			// Write from programming buffer
-			__boot_page_write_short((uint16_t)(void*)address);
-			boot_spm_busy_wait();
-		}
-		/* Read memory block mode, length is big endian.  */
-		else if (ch == STK_READ_PAGE) {
-			// READ PAGE - we only read flash and EEPROM
-			getch();			/* getlen() */
-			length = getch();
+          // Add jump to bootloader at RESET vector
+          buff[0] = 0x7f;
+          buff[1] = 0xce; // rjmp 0x1d00 instruction
+        }
+#endif
 
-			verifySpace();
-			/* TODO: putNch */
-			do {
-				// read a Flash byte and increment the address
-				__asm__ ("lpm %0,Z+\n" : "=r" (ch), "=z" (address): "1" (address));
-				putch(ch);
-			} while (--length);
-		}
+        // Copy buffer into programming buffer
+        bufPtr = buff;
+        addrPtr = (uint16_t)(void*)address;
+        ch = SPM_PAGESIZE / 2;
+        do {
+          uint16_t a;
+          a = *bufPtr++;
+          a |= (*bufPtr++) << 8;
+          __boot_page_fill_short((uint16_t)(void*)addrPtr,a);
+          addrPtr += 2;
+        } while (--ch);
 
-		/* Get device signature bytes  */
-		else if (ch == STK_READ_SIGN) {
-			// READ SIGN - return what Avrdude wants to hear
-			verifySpace();
-			putch(SIGNATURE_0);
-			putch(SIGNATURE_1);
-			putch(SIGNATURE_2);
-		}
-		else if (ch == STK_LEAVE_PROGMODE) { /* 'Q' */
-			// Adaboot no-wait mod
-			watchdogConfig(WATCHDOG_16MS);
-			verifySpace();
-		}
-		else {
-			// This covers the response to commands like STK_ENTER_PROGMODE
-			verifySpace();
-		}
-		putch(STK_OK);
-	}
+        // Write from programming buffer
+        __boot_page_write_short((uint16_t)(void*)address);
+        boot_spm_busy_wait();
+
+#if defined(RWWSRE)
+        // Reenable read access to flash
+        boot_rww_enable();
+#endif
+#ifdef SUPPORT_EEPROM
+      } else if (type == 'E') {	/* EEPROM */
+        // Read command terminator, start reply
+        verifySpace();
+
+        length = bufPtr - buff;
+        addrPtr = address;
+        bufPtr = buff;
+        while (length--) {
+          watchdogReset();
+          eeprom_write(addrPtr++, *bufPtr++);
+        }
+      }
+#endif
+    }
+    /* Read memory block mode, length is big endian.  */
+    else if(ch == STK_READ_PAGE) {
+      // READ PAGE - we only read flash and EEPROM
+      uint8_t type;
+
+      getch();			/* getlen() */
+      length = getch();
+      type = getch();
+
+      verifySpace();
+      /* TODO: putNch */
+#ifdef SUPPORT_EEPROM
+      if (type == 'F')
+#endif
+        do {
+#ifdef VIRTUAL_BOOT_PARTITION
+          // Undo vector patch in bottom page so verify passes
+          if (address == 0)       ch=rstVect & 0xff;
+          else if (address == 1)  ch=rstVect >> 8;
+          else if (address == 8)  ch=wdtVect & 0xff;
+          else if (address == 9) ch=wdtVect >> 8;
+          else ch = pgm_read_byte_near(address);
+          address++;
+#elif defined(RAMPZ)
+          // Since RAMPZ should already be set, we need to use EPLM directly.
+          // Also, we can use the autoincrement version of lpm to update "address"
+          //      do putch(pgm_read_byte_near(address++));
+          //      while (--length);
+          // read a Flash and increment the address (may increment RAMPZ)
+          __asm__ ("elpm %0,Z+\n" : "=r" (ch), "=z" (address): "1" (address));
+#else
+          // read a Flash byte and increment the address
+          __asm__ ("lpm %0,Z+\n" : "=r" (ch), "=z" (address): "1" (address));
+#endif
+          putch(ch);
+        } while (--length);
+#ifdef SUPPORT_EEPROM
+      else if (type == 'E')
+        while (length--)
+          putch(eeprom_read(address++));
+#endif
+    }
+
+    /* Get device signature bytes  */
+    else if(ch == STK_READ_SIGN) {
+      // READ SIGN - return what Avrdude wants to hear
+      verifySpace();
+      putch(SIGNATURE_0);
+      putch(SIGNATURE_1);
+      putch(SIGNATURE_2);
+    }
+    else if (ch == STK_LEAVE_PROGMODE) { /* 'Q' */
+      // Adaboot no-wait mod
+      watchdogConfig(WATCHDOG_16MS);
+      verifySpace();
+    }
+    else {
+      // This covers the response to commands like STK_ENTER_PROGMODE
+      verifySpace();
+    }
+    putch(STK_OK);
+  }
 }
 
 /***************************************************************************/
@@ -365,17 +439,17 @@ static void radio_init(void) {
 	uint8_t RX_addr[3] = {'L', 'M', '1'};
 	uint8_t TX_addr[3] = {'M', 'T', 'R'};
 
-	//spi_init();
+	spi_init();
 
-	//nrf24_config(TX_addr, RX_addr);
-
+	nrf24_config(TX_addr, RX_addr);
+	/*
 	uint8_t ch='a';
 	while (1) {
 		if(ch!='\0')
 			putch(ch);
 
 		ch = getch();
-	}
+	}*/
 }
 
 void putch(char ch) {
