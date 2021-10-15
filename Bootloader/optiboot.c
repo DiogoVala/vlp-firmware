@@ -30,9 +30,9 @@ asm("  .section .version\n"
 #endif*/
 
 #define F_CPU 16000000UL
-#define BAUD_RATE 9600
 
-#define BAUD_PRESCALER (((F_CPU / (BAUD_RATE * 16UL))) - 1)
+//#define BAUD_PRESCALER (((F_CPU / (BAUD_RATE * 16UL))) - 1)
+#define BAUD_PRESCALER (( (F_CPU + BAUD_RATE * 4L) / ((BAUD_RATE * 8L))) - 1 )
 
 #define ASYNCHRONOUS (0<<UMSEL00) // USART Mode Selection
 
@@ -118,6 +118,7 @@ static void delay8(uint16_t count);
 /* flashing the device. 												  			      */
 
 int main(void) {
+
 	uint8_t ch;
 
 	/*
@@ -193,7 +194,7 @@ int main(void) {
 
 		/* Set Baud Rate */
 	UBRR0H = (uint8_t)(BAUD_PRESCALER >> 8);
-	UBRR0L = (uint8_t) BAUD_PRESCALER;
+	UBRR0L = (uint8_t)(BAUD_PRESCALER & 0xFF);
 	
 	/* Set Frame Format */
 	UCSR0C = ASYNCHRONOUS | PARITY_MODE | STOP_BIT | DATA_BIT;
@@ -201,6 +202,7 @@ int main(void) {
 	/* Enable Receiver and Transmitter */
 	UCSR0B = _BV(RXEN0) | _BV(TXEN0);
 
+	UCSR0A = _BV(U2X0);
 
 	/* Setup radio module */
 	radio_init();
@@ -333,7 +335,7 @@ int main(void) {
 }
 
 /***************************************************************************/
-/*					    Radio and UART functions						   */
+/*					   			 Radio and UART functions							   */
 /***************************************************************************/
 
 /*
@@ -346,12 +348,9 @@ int main(void) {
 #define RADIO_OFF 0
 static uint8_t radio_mode = RADIO_OFF;
 
+/* Libs only used for radio */
 #include "spi.h"
-#include "spi.c"
-/* The Makefile doesn't compile and link all .c files automatically, so I'm
-   adding them manually */
 #include "nrf24l01.h"
-#include "nrf24l01.c"
 
 /* Used to grab addresses from eeprom */
 static uint8_t eeprom_read(uint16_t addr) {
@@ -366,23 +365,24 @@ static void radio_init(void) {
 	uint8_t RX_addr[3] = {'L', 'M', '1'};
 	uint8_t TX_addr[3] = {'M', 'T', 'R'};
 
-	spi_init();
+	//spi_init();
 
-	nrf24_config(TX_addr, RX_addr);
+	//nrf24_config(TX_addr, RX_addr);
 
-	uint8_t ch;
+	uint8_t ch='a';
 	while (1) {
-		ch = getch();
-		putch(ch);
-	}
+		if(ch!='\0')
+			putch(ch);
 
+		ch = getch();
+	}
 }
 
 void putch(char ch) {
 
-	while (!(UCSR0A & _BV(UDRE0)));
+	while (( UCSR0A & _BV(UDRE0)) == 0);
 	UDR0 = ch;
-	return;
+	//return;
 #if 0
 	static uint8_t tx_pkt_len = 0; /* Number of bytes in the local buffer */
 	static uint8_t tx_pkt_buf[32]; /* Local buffer to store bytes before sending */
@@ -421,13 +421,19 @@ uint8_t getch(void) {
 	static uint8_t rx_pkt_ptr = 1; /* Start of data in the buffer */
 	static uint8_t rx_pkt_buf[32]; /* Local buffer to store bytes before sending */
 
+	watchdogReset();
+
+	while (( UCSR0A & (1<<RXC0)) == 0) {};
+	ch = UDR0;
+
+#if 0
 	while (1) {
 		if ((UCSR0A & _BV(RXC0)) && !(UCSR0A & FE0) && !(UCSR0A & UPE0)) {
 			ch = UDR0;
 			watchdogReset();
 			break;
 		}
-#if 0
+
 		/* If there is data in the local buffer or new data in RF24 fifo */
 		if (rx_pkt_len || nrf24_dataReady() == NRF24_DATA_AVAILABLE) {
 			watchdogReset();
@@ -460,8 +466,9 @@ uint8_t getch(void) {
 				break;
 			}
 		}
-		#endif
+		
 	}
+	#endif
 	return ch;
 }
 
