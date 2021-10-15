@@ -421,18 +421,13 @@ static void radio_init(void) {
 	}*/
 }
 
-void putch_uart(char ch){
-	while (( UCSR0A & _BV(UDRE0)) == 0);
-	UDR0 = ch;
-}
-
 void putch(char ch) {
 
 	/*
 	while (( UCSR0A & _BV(UDRE0)) == 0);
 	UDR0 = ch;
 	*/
-	static uint8_t tx_pkt_len = 0; /* Number of bytes in the local buffer */
+	static uint8_t tx_pkt_len = 1; /* Number of bytes in the local buffer */
 	static uint8_t tx_pkt_buf[32]; /* Local buffer to store bytes before sending */
 
 	if (radio_mode == RADIO_OFF) {
@@ -495,7 +490,7 @@ void putch(char ch) {
 
 uint8_t getch(void) {
 	uint8_t ch = '\0';
-	static uint8_t pkt_id = 0; /* Number of the packet we are currently receiving */
+	static uint8_t pkt_id = UINT8_MAX; /* Number of the packet we are currently receiving */
 	static uint8_t rx_pkt_len = 0; /* Number of bytes in the local buffer */
 	static uint8_t rx_pkt_ptr = 1; /* Start of data in the buffer */
 	static uint8_t rx_pkt_buf[32]; /* Local buffer to store bytes before sending */
