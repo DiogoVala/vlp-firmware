@@ -102,7 +102,7 @@ STK500-2 = $(STK500) -d$(MCU_TARGET) -ms -q -lCF -LCF -cUSB -I200kHz -s -wt
 # End of build environment code.
 
 
-OBJ        = $(PROGRAM).o nrf24l01.c spi.c
+OBJ        = $(PROGRAM).o nrf24l01.o spi.o
 OPTIMIZE = -Os -fno-inline-small-functions -fno-split-wide-types
 
 DEFS       = 
@@ -127,7 +127,12 @@ SIZE           = $(GCCROOT)avr-size
 # appropriate parameters ("-DLED_START_FLASHES=10") to gcc
 #
 
+ifdef BAUD_RATE
+BAUD_RATE_CMD = -DBAUD_RATE=$(BAUD_RATE)
+dummy = FORCE
+else
 BAUD_RATE_CMD = -DBAUD_RATE=115200
+endif
 
 COMMON_OPTIONS += -DRADIO_UART=1
 
@@ -170,7 +175,7 @@ COMMON_OPTIONS += -DFORCE_WATCHDOG
 atmega328: TARGET = atmega328
 atmega328: MCU_TARGET = atmega328p
 atmega328: CFLAGS += $(COMMON_OPTIONS)
-atmega328: AVR_FREQ ?= 16000000L
+atmega328: AVR_FREQ ?= 16000000UL
 atmega328: LDSECTIONS  = -Wl,--section-start=.text=0x7$(TEXT_START) -Wl,--section-start=.version=0x7ffe
 atmega328: $(PROGRAM)_atmega328.hex
 atmega328: $(PROGRAM)_atmega328.lst
@@ -193,9 +198,8 @@ isp-stk500: $(PROGRAM)_$(TARGET).hex
 	$(STK500-1)
 	$(STK500-2)
 
-%.elf: $(OBJ) baudcheck $(dummy)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
-	$(SIZE) $@
+%.elf: $(OBJ)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 clean:
 	rm -rf *.o *.elf *.lst *.map *.sym *.lss *.eep *.srec *.bin *.hex *.tmp.sh
