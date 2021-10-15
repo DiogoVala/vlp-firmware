@@ -1,10 +1,10 @@
 /* main.c
- * 
- * Author: Diogo Vala
- *
- * Description: 
- * 
- */
+*
+* Author: Diogo Vala
+*
+* Description:
+*
+*/
 
 /* Library includes */
 #include <avr/io.h>
@@ -15,6 +15,7 @@
 #include <util/delay.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 /* File includes */
 #include "../../Common/uart.h"
@@ -40,13 +41,13 @@ static void rf_to_uart(void);
 uint8_t min(uint8_t x, uint8_t y);
 
 /* FIFO to receive data from UART ISR */
-static struct fifo_buffer_s {
+static volatile struct fifo_buffer_s {
 	uint8_t data[FIFO_SIZE];
-	uint8_t len; /* Number of bytes currently stored */
+	uint16_t len; /* Number of bytes currently stored */
 } tx_fifo;
 
 /* Function to fill the FIFO */
-void handle_input(uint8_t ch) {
+static void handle_input(volatile uint8_t ch) {
 	tx_fifo.data[tx_fifo.len++] = ch;
 }
 
@@ -66,6 +67,8 @@ int main() {
 		return EXIT_FAILURE;
 	}
 	
+	uart_puts("\r\nConnected.");
+	
 	sei(); /* Enable interrupts */
 
 	while(1){
@@ -75,11 +78,12 @@ int main() {
 }
 
 static void rf_to_uart(void){
-
+	
 	static uint8_t pkt_id = UINT8_MAX; /* Number of the packet we are currently receiving */
 	uint8_t rx_pkt_len; /* Length of packet received from RF24 */
 	uint8_t rx_pkt_buf[NRF24_MAX_PAYLOAD]; /* Stores packets from RF24 */
 
+	
 	if(nrf24_dataReady() == NRF24_DATA_AVAILABLE){
 
 		nrf24_getData(rx_pkt_buf, &rx_pkt_len); /* Get data from RF24 */
@@ -100,11 +104,11 @@ static void uart_to_rf(void) {
 
 	static bool first_tx = true;
 	static uint8_t pkt_id = 0; /* Number of the packet we are currently sending */
-	uint8_t tx_pkt_len;
-	uint8_t tx_pkt_buf[NRF24_MAX_PAYLOAD];
+	static uint8_t tx_pkt_len;
+	static uint8_t tx_pkt_buf[NRF24_MAX_PAYLOAD];
 	static uint32_t first_tx_timeout = TX_TIMEOUT;
-	uint32_t tx_retries = 10;
-
+	uint32_t tx_retries = 50;
+	
 	/* If there is no transmission for a while, start over */
 	if (!first_tx_timeout--)
 	{
@@ -112,19 +116,19 @@ static void uart_to_rf(void) {
 		first_tx=true;
 	}
 
-	/* First transmission sends a reset command to the Luminary program 
-	 * and waits for it to enter the bootloader before sending data */
+	/* First transmission sends a reset command to the Luminary program
+	* and waits for it to enter the bootloader before sending data */
 	if (first_tx) {
 		/*
-		 * Our protocol requires any program running on the board
-		 * to reset if it receives a single 0xff byte.
-		 */
+		* Our protocol requires any program running on the board
+		* to reset if it receives a single 0xff byte.
+		*/
 		nrf24_sendData(reset_cmd, 1);
 		nrf24_wait_tx_result();
 
 		/* Give the board time to reboot and enter the bootloader */
 		_delay_ms(100);
-
+		
 		first_tx = false;
 	}
 	else if (tx_fifo.len){ /* If there is data in the FIFO */
@@ -138,22 +142,24 @@ static void uart_to_rf(void) {
 		
 		memcpy(tx_pkt_buf+PKT_ID_SIZE, tx_fifo.data, tx_pkt_len); /* Copy bytes from FIFO into the payload array */
 		
-		memmove(tx_fifo.data, tx_fifo.data+PKT_ID_SIZE, tx_pkt_len); /* Move FIFO data to the start position */
+		memmove(tx_fifo.data, tx_fifo.data+tx_pkt_len, tx_fifo.len); /* Shift FIFO data to the start position */
 		
 		tx_fifo.len -= tx_pkt_len;
 		sei();
-	
+		
 		while (tx_retries--) { /* Send until received or timeout */
 
 			nrf24_sendData(tx_pkt_buf, tx_pkt_len);
 			if (nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
 				break;
-				
+			
 			_delay_ms(4); /* Give the receiver some time to process data */
 		}
+
 		/* Reset timeout */
 		first_tx_timeout = TX_TIMEOUT;
 	}
+	
 }
 
 uint8_t min(uint8_t x, uint8_t y){

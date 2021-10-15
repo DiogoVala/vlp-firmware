@@ -9,13 +9,13 @@
 #ifndef UART_H
 #define UART_H
 
-#define UART_BAUD_RATE 9600
+#define UART_BAUD_RATE 115200
 
 #ifndef F_CPU
 #define F_CPU 16000000UL
 #endif
 
-#define BAUD_PRESCALER (((F_CPU / (UART_BAUD_RATE * 16UL))) - 1)
+#define BAUD_PRESCALER (( (F_CPU + UART_BAUD_RATE * 4L) / ((UART_BAUD_RATE * 8L))) - 1 )
 
 #define ASYNCHRONOUS (0<<UMSEL00) // USART Mode Selection
 
