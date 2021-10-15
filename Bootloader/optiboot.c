@@ -154,27 +154,27 @@ int main(void) {
 
 	// Prepare .data
 	asm volatile (
-	   "	ldi	r17, hi8(__data_end)\n"
-	   "	ldi	r26, lo8(__data_start)\n"
-	   "	ldi	r27, hi8(__data_start)\n"
-	   "	ldi	r30, lo8(__data_load_start)\n"
-	   "	ldi	r31, hi8(__data_load_start)\n"
-	   "	rjmp	cpchk\n"
-	   "copy:	lpm	__tmp_reg__, Z+\n"
-	   "	st	X+, __tmp_reg__\n"
-	   "cpchk:	cpi	r26, lo8(__data_end)\n"
-	   "	cpc	r27, r17\n"
-	   "	brne	copy\n");
+	  "	ldi	r17, hi8(__data_end)\n"
+	  "	ldi	r26, lo8(__data_start)\n"
+	  "	ldi	r27, hi8(__data_start)\n"
+	  "	ldi	r30, lo8(__data_load_start)\n"
+	  "	ldi	r31, hi8(__data_load_start)\n"
+	  "	rjmp	cpchk\n"
+	  "copy:	lpm	__tmp_reg__, Z+\n"
+	  "	st	X+, __tmp_reg__\n"
+	  "cpchk:	cpi	r26, lo8(__data_end)\n"
+	  "	cpc	r27, r17\n"
+	  "	brne	copy\n");
 	// Prepare .bss
 	asm volatile (
-	   "	ldi	r17, hi8(__bss_end)\n"
-	   "	ldi	r26, lo8(__bss_start)\n"
-	   "	ldi	r27, hi8(__bss_start)\n"
-	   "	rjmp	clchk\n"
-	   "clear:	st	X+, __zero_reg__\n"
-	   "clchk:	cpi	r26, lo8(__bss_end)\n"
-	   "	cpc	r27, r17\n"
-	   "	brne	clear\n");
+	  "	ldi	r17, hi8(__bss_end)\n"
+	  "	ldi	r26, lo8(__bss_start)\n"
+	  "	ldi	r27, hi8(__bss_start)\n"
+	  "	rjmp	clchk\n"
+	  "clear:	st	X+, __zero_reg__\n"
+	  "clchk:	cpi	r26, lo8(__bss_end)\n"
+	  "	cpc	r27, r17\n"
+	  "	brne	clear\n");
 
 	/*
 	 * Disable pullups that may have been enabled by a user program.
@@ -184,13 +184,13 @@ int main(void) {
 	DDRD |= 3;
 	PORTD &= ~3;
 
-		/* Set Baud Rate */
+	/* Set Baud Rate */
 	UBRR0H = (uint8_t)(BAUD_PRESCALER >> 8);
 	UBRR0L = (uint8_t)(BAUD_PRESCALER & 0xFF);
-	
+
 	/* Set Frame Format */
 	UCSR0C = ASYNCHRONOUS | PARITY_MODE | STOP_BIT | DATA_BIT;
-	
+
 	/* Enable Receiver and Transmitter */
 	UCSR0B = _BV(RXEN0) | _BV(TXEN0);
 
@@ -204,177 +204,177 @@ int main(void) {
 	watchdogConfig(WATCHDOG_SELECTION);
 
 	/* Forever loop */
-  for (;;) {
-    /* get character from UART */
-    ch = getch();
+	for (;;) {
+		/* get character from UART */
+		ch = getch();
 
-    if(ch == STK_GET_PARAMETER) {
-      unsigned char which = getch();
-      verifySpace();
-      if (which == 0x82) {
-	/*
-	 * Send optiboot version as "minor SW version"
-	 */
-	putch(OPTIBOOT_MINVER);
-      } else if (which == 0x81) {
-	  putch(OPTIBOOT_MAJVER);
-      } else {
-	/*
-	 * GET PARAMETER returns a generic 0x03 reply for
-         * other parameters - enough to keep Avrdude happy
-	 */
-	putch(0x03);
-      }
-    }
-    else if(ch == STK_SET_DEVICE) {
-      // SET DEVICE is ignored
-      getNch(20);
-    }
-    else if(ch == STK_SET_DEVICE_EXT) {
-      // SET DEVICE EXT is ignored
-      getNch(5);
-    }
-    else if(ch == STK_LOAD_ADDRESS) {
-      // LOAD ADDRESS
-      uint16_t newAddress;
-      newAddress = getch();
-      newAddress |= getch() << 8;
-      newAddress <<= 1; // Convert from word address to byte address
-      address = newAddress;
-      verifySpace();
-    }
-    else if(ch == STK_UNIVERSAL) {
-      // UNIVERSAL command is ignored
-      getNch(4);
-      putch(0x00);
-    }
-    /* Write memory, length is big endian and is in bytes */
-    else if(ch == STK_PROG_PAGE) {
-      // PROGRAM PAGE - we support flash and EEPROM programming
-      uint8_t *bufPtr;
-      uint16_t addrPtr;
-      uint8_t type;
+		if (ch == STK_GET_PARAMETER) {
+			unsigned char which = getch();
+			verifySpace();
+			if (which == 0x82) {
+				/*
+				 * Send optiboot version as "minor SW version"
+				 */
+				putch(OPTIBOOT_MINVER);
+			} else if (which == 0x81) {
+				putch(OPTIBOOT_MAJVER);
+			} else {
+				/*
+				 * GET PARAMETER returns a generic 0x03 reply for
+				       * other parameters - enough to keep Avrdude happy
+				 */
+				putch(0x03);
+			}
+		}
+		else if (ch == STK_SET_DEVICE) {
+			// SET DEVICE is ignored
+			getNch(20);
+		}
+		else if (ch == STK_SET_DEVICE_EXT) {
+			// SET DEVICE EXT is ignored
+			getNch(5);
+		}
+		else if (ch == STK_LOAD_ADDRESS) {
+			// LOAD ADDRESS
+			uint16_t newAddress;
+			newAddress = getch();
+			newAddress |= getch() << 8;
+			newAddress <<= 1; // Convert from word address to byte address
+			address = newAddress;
+			verifySpace();
+		}
+		else if (ch == STK_UNIVERSAL) {
+			// UNIVERSAL command is ignored
+			getNch(4);
+			putch(0x00);
+		}
+		/* Write memory, length is big endian and is in bytes */
+		else if (ch == STK_PROG_PAGE) {
+			// PROGRAM PAGE - we support flash and EEPROM programming
+			uint8_t *bufPtr;
+			uint16_t addrPtr;
+			uint8_t type;
 
-      getch();			/* getlen() */
-      length = getch();
-      type = getch();
-
-#ifdef SUPPORT_EEPROM
-      if (type == 'F')		/* Flash */
-#endif
-        // If we are in RWW section, immediately start page erase
-        if (address < NRWWSTART) __boot_page_erase_short((uint16_t)(void*)address);
-
-      // While that is going on, read in page contents
-      bufPtr = buff;
-      do *bufPtr++ = getch();
-      while (--length);
+			getch();			/* getlen() */
+			length = getch();
+			type = getch();
 
 #ifdef SUPPORT_EEPROM
-      if (type == 'F') {	/* Flash */
+			if (type == 'F')		/* Flash */
 #endif
-        // If we are in NRWW section, page erase has to be delayed until now.
-        // Todo: Take RAMPZ into account (not doing so just means that we will
-        //  treat the top of both "pages" of flash as NRWW, for a slight speed
-        //  decrease, so fixing this is not urgent.)
-        if (address >= NRWWSTART) __boot_page_erase_short((uint16_t)(void*)address);
+				// If we are in RWW section, immediately start page erase
+				if (address < NRWWSTART) __boot_page_erase_short((uint16_t)(void*)address);
 
-        // Read command terminator, start reply
-        verifySpace();
+			// While that is going on, read in page contents
+			bufPtr = buff;
+			do *bufPtr++ = getch();
+			while (--length);
 
-        // If only a partial page is to be programmed, the erase might not be complete.
-        // So check that here
-        boot_spm_busy_wait();
+#ifdef SUPPORT_EEPROM
+			if (type == 'F') {	/* Flash */
+#endif
+				// If we are in NRWW section, page erase has to be delayed until now.
+				// Todo: Take RAMPZ into account (not doing so just means that we will
+				//  treat the top of both "pages" of flash as NRWW, for a slight speed
+				//  decrease, so fixing this is not urgent.)
+				if (address >= NRWWSTART) __boot_page_erase_short((uint16_t)(void*)address);
 
-        // Copy buffer into programming buffer
-        bufPtr = buff;
-        addrPtr = (uint16_t)(void*)address;
-        ch = SPM_PAGESIZE / 2;
-        do {
-          uint16_t a;
-          a = *bufPtr++;
-          a |= (*bufPtr++) << 8;
-          __boot_page_fill_short((uint16_t)(void*)addrPtr,a);
-          addrPtr += 2;
-        } while (--ch);
+				// Read command terminator, start reply
+				verifySpace();
 
-        // Write from programming buffer
-        __boot_page_write_short((uint16_t)(void*)address);
-        boot_spm_busy_wait();
+				// If only a partial page is to be programmed, the erase might not be complete.
+				// So check that here
+				boot_spm_busy_wait();
+
+				// Copy buffer into programming buffer
+				bufPtr = buff;
+				addrPtr = (uint16_t)(void*)address;
+				ch = SPM_PAGESIZE / 2;
+				do {
+					uint16_t a;
+					a = *bufPtr++;
+					a |= (*bufPtr++) << 8;
+					__boot_page_fill_short((uint16_t)(void*)addrPtr, a);
+					addrPtr += 2;
+				} while (--ch);
+
+				// Write from programming buffer
+				__boot_page_write_short((uint16_t)(void*)address);
+				boot_spm_busy_wait();
 
 #if defined(RWWSRE)
-        // Reenable read access to flash
-        boot_rww_enable();
+				// Reenable read access to flash
+				boot_rww_enable();
 #endif
 #ifdef SUPPORT_EEPROM
-      } else if (type == 'E') {	/* EEPROM */
-        // Read command terminator, start reply
-        verifySpace();
+			} else if (type == 'E') {	/* EEPROM */
+				// Read command terminator, start reply
+				verifySpace();
 
-        length = bufPtr - buff;
-        addrPtr = address;
-        bufPtr = buff;
-        while (length--) {
-          watchdogReset();
-          eeprom_write(addrPtr++, *bufPtr++);
-        }
-      }
+				length = bufPtr - buff;
+				addrPtr = address;
+				bufPtr = buff;
+				while (length--) {
+					watchdogReset();
+					eeprom_write(addrPtr++, *bufPtr++);
+				}
+			}
 #endif
-    }
-    /* Read memory block mode, length is big endian.  */
-    else if(ch == STK_READ_PAGE) {
-      // READ PAGE - we only read flash and EEPROM
-      uint8_t type;
+		}
+		/* Read memory block mode, length is big endian.  */
+		else if (ch == STK_READ_PAGE) {
+			// READ PAGE - we only read flash and EEPROM
+			uint8_t type;
 
-      getch();			/* getlen() */
-      length = getch();
-      type = getch();
+			getch();			/* getlen() */
+			length = getch();
+			type = getch();
 
-      verifySpace();
-      /* TODO: putNch */
+			verifySpace();
+			/* TODO: putNch */
 #ifdef SUPPORT_EEPROM
-      if (type == 'F')
+			if (type == 'F')
 #endif
-        do {
+				do {
 #ifdef RAMPZ
-          // Since RAMPZ should already be set, we need to use EPLM directly.
-          // Also, we can use the autoincrement version of lpm to update "address"
-          //      do putch(pgm_read_byte_near(address++));
-          //      while (--length);
-          // read a Flash and increment the address (may increment RAMPZ)
-          __asm__ ("elpm %0,Z+\n" : "=r" (ch), "=z" (address): "1" (address));
+					// Since RAMPZ should already be set, we need to use EPLM directly.
+					// Also, we can use the autoincrement version of lpm to update "address"
+					//      do putch(pgm_read_byte_near(address++));
+					//      while (--length);
+					// read a Flash and increment the address (may increment RAMPZ)
+					__asm__ ("elpm %0,Z+\n" : "=r" (ch), "=z" (address): "1" (address));
 #else
-          // read a Flash byte and increment the address
-          __asm__ ("lpm %0,Z+\n" : "=r" (ch), "=z" (address): "1" (address));
+					// read a Flash byte and increment the address
+					__asm__ ("lpm %0,Z+\n" : "=r" (ch), "=z" (address): "1" (address));
 #endif
-          putch(ch);
-        } while (--length);
+					putch(ch);
+				} while (--length);
 #ifdef SUPPORT_EEPROM
-      else if (type == 'E')
-        while (length--)
-          putch(eeprom_read(address++));
+			else if (type == 'E')
+				while (length--)
+					putch(eeprom_read(address++));
 #endif
-    }
+		}
 
-    /* Get device signature bytes  */
-    else if(ch == STK_READ_SIGN) {
-      // READ SIGN - return what Avrdude wants to hear
-      verifySpace();
-      putch(SIGNATURE_0);
-      putch(SIGNATURE_1);
-      putch(SIGNATURE_2);
-    }
-    else if (ch == STK_LEAVE_PROGMODE) { /* 'Q' */
-      // Adaboot no-wait mod
-      watchdogConfig(WATCHDOG_16MS);
-      verifySpace();
-    }
-    else {
-      // This covers the response to commands like STK_ENTER_PROGMODE
-      verifySpace();
-    }
-    putch(STK_OK);
-  }
+		/* Get device signature bytes  */
+		else if (ch == STK_READ_SIGN) {
+			// READ SIGN - return what Avrdude wants to hear
+			verifySpace();
+			putch(SIGNATURE_0);
+			putch(SIGNATURE_1);
+			putch(SIGNATURE_2);
+		}
+		else if (ch == STK_LEAVE_PROGMODE) { /* 'Q' */
+			// Adaboot no-wait mod
+			watchdogConfig(WATCHDOG_16MS);
+			verifySpace();
+		}
+		else {
+			// This covers the response to commands like STK_ENTER_PROGMODE
+			verifySpace();
+		}
+		putch(STK_OK);
+	}
 }
 
 /***************************************************************************/
@@ -421,14 +421,50 @@ static void radio_init(void) {
 	}*/
 }
 
-void putch(char ch) {
-
+void putch_uart(char ch){
 	while (( UCSR0A & _BV(UDRE0)) == 0);
 	UDR0 = ch;
-	//return;
-#if 0
+}
+
+void putch(char ch) {
+
+	/*
+	while (( UCSR0A & _BV(UDRE0)) == 0);
+	UDR0 = ch;
+	*/
 	static uint8_t tx_pkt_len = 0; /* Number of bytes in the local buffer */
 	static uint8_t tx_pkt_buf[32]; /* Local buffer to store bytes before sending */
+
+	if (radio_mode == RADIO_OFF) {
+		while (1) {
+			while (( UCSR0A & _BV(UDRE0)) == 0);
+			UDR0 = ch;
+			break;
+		}
+	}
+	else { /* Radio ON */
+		tx_pkt_buf[tx_pkt_len++] = ch; /* Fills the local buffer */
+
+		if (ch == STK_OK || tx_pkt_len == NRF24_MAX_PAYLOAD - 1) { /* When last message or buffer full */
+			while (1) { /* Send buffer until received */
+
+				nrf24_sendData(tx_pkt_buf, tx_pkt_len);
+				if (nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
+					break; /* Payload sent and acknowledged*/
+
+				/* Wait 4ms to allow the remote end to switch to Rx mode */
+				my_delay(4);
+			}
+
+			/* Reset the local buffer */
+			tx_pkt_len = 1; /* Only the identifier is stored */
+			tx_pkt_buf[0] ++; /* Packet Identifier */
+		}
+	}
+
+	//return;
+#if 0
+
 
 	if (radio_mode == RADIO_ON) {
 
@@ -466,14 +502,11 @@ uint8_t getch(void) {
 
 	watchdogReset();
 
-	while (( UCSR0A & (1<<RXC0)) == 0) {};
-	ch = UDR0;
-
-#if 0
 	while (1) {
-		if ((UCSR0A & _BV(RXC0)) && !(UCSR0A & FE0) && !(UCSR0A & UPE0)) {
-			ch = UDR0;
+		if (( UCSR0A & (1 << RXC0)) != 0) /* If we have data in the UART */
+		{
 			watchdogReset();
+			ch = UDR0;
 			break;
 		}
 
@@ -484,11 +517,10 @@ uint8_t getch(void) {
 
 			/* If our local buffer is empty, get more data */
 			if (rx_pkt_len == 0) {
-
 				nrf24_getData(rx_pkt_buf, &rx_pkt_len);
 
 				if (rx_pkt_buf[0] == pkt_id) { /* We have already received this packet before */
-					rx_pkt_len = 0;
+					rx_pkt_len = 0; /* Ignore it */
 				}
 				else
 				{
@@ -509,12 +541,55 @@ uint8_t getch(void) {
 				break;
 			}
 		}
-		
 	}
-	#endif
 	return ch;
 }
 
+
+#if 0
+while (1) {
+	if ((UCSR0A & _BV(RXC0)) && !(UCSR0A & FE0) && !(UCSR0A & UPE0)) {
+		ch = UDR0;
+		watchdogReset();
+		break;
+	}
+
+	/* If there is data in the local buffer or new data in RF24 fifo */
+	if (rx_pkt_len || nrf24_dataReady() == NRF24_DATA_AVAILABLE) {
+		watchdogReset();
+		radio_mode = RADIO_ON; /* From now on, we're in radio mode */
+
+		/* If our local buffer is empty, get more data */
+		if (rx_pkt_len == 0) {
+
+			nrf24_getData(rx_pkt_buf, &rx_pkt_len);
+
+			if (rx_pkt_buf[0] == pkt_id) { /* We have already received this packet before */
+				rx_pkt_len = 0;
+			}
+			else
+			{
+				pkt_id = rx_pkt_buf[0]; /* It's a new packet, update the current ID */
+			}
+		}
+
+		/* If there is data in the local buffer */
+		if (rx_pkt_len)
+		{
+			ch = rx_pkt_buf[rx_pkt_ptr]; /* Grab next byte in the buffer */
+			rx_pkt_ptr++;
+			rx_pkt_len--;
+			if (rx_pkt_len == 0) /* We have read all the bytes in the buffer */
+			{
+				rx_pkt_ptr = 1; /* Reset the data pointer */
+			}
+			break;
+		}
+	}
+}
+return ch;
+}
+#endif
 
 /***************************************************************************/
 /*							Other functions								   */
@@ -541,7 +616,7 @@ void verifySpace(void) {
 // Watchdog functions. These are only safe with interrupts turned off.
 void watchdogReset() {
 	__asm__ __volatile__ (
-	   "wdr\n"
+	  "wdr\n"
 	);
 }
 
@@ -559,23 +634,23 @@ void appStart(uint8_t rstFlags) {
 	//  executes before normal c init code) to save R2 to a global variable.
 	__asm__ __volatile__ ("mov r2, %0\n" :: "r" (rstFlags));
 	__asm__ __volatile__ (
-	   // Jump to RST vector
-	   "clr r30\n"
-	   "clr r31\n"
-	   "ijmp\n"
+	  // Jump to RST vector
+	  "clr r30\n"
+	  "clr r31\n"
+	  "ijmp\n"
 	);
 }
 
 static void delay8(uint16_t count) {
 	while (count --)
 		__asm__ __volatile__ (
-		   "\tnop\n"
-		   "\tnop\n"
-		   "\tnop\n"
-		   "\tnop\n"
-		   "\tnop\n"
-		   "\tnop\n"
-		   "\tnop\n"
-		   "\twdr\n"
+		  "\tnop\n"
+		  "\tnop\n"
+		  "\tnop\n"
+		  "\tnop\n"
+		  "\tnop\n"
+		  "\tnop\n"
+		  "\tnop\n"
+		  "\twdr\n"
 		);
 }
