@@ -25,7 +25,7 @@
 #define	MAX_PLD_SIZE (NRF24_MAX_PAYLOAD - 1) /* Number of data bytes in the payload */
 #define PKT_ID_IDX 0 /* First byte of the payload is reserved for the packet identifier */
 #define PKT_DATA_START 1 /* Size of the packet identifier (in bytes) */
-#define FIFO_SIZE 256 /* Number of bytes in the data buffer that stores received bytes from UART */
+#define CIRC_BUFFER_SIZE 254 /* Number of bytes in the data buffer that stores received bytes from UART */
 #define TX_TIMEOUT 50000 /* Some generic timeout value if there is no transmission for a while */
 
 static uint8_t reset_cmd[]={0xFF};
@@ -39,20 +39,48 @@ uint8_t min(uint8_t x, uint8_t y);
 
 /* FIFO to receive data from UART ISR */
 static struct ring_buffer_s {
-	uint8_t data[FIFO_SIZE];
+	uint8_t data[CIRC_BUFFER_SIZE];
 	uint8_t len; /* Number of bytes currently stored */
+	uint8_t r_idx;
+	uint8_t w_idx;
 } ring_buf;
 
-/* Function to fill the FIFO */
-static void handle_input(volatile uint8_t ch) {
-	ring_buf.data[ring_buf.len++] = ch;
+static bool circ_buf_empty() {
+	return(ring_buf.len == 0);
 }
+
+static bool circ_buf_full() {
+	return(ring_buf.len == CIRC_BUFFER_SIZE);
+}
+
+/* function to fill the circular buffer */
+static void circ_buf_input(volatile uint8_t ch) {
+	if(circ_buf_full())
+		return;
+	ring_buf.data[ring_buf.w_idx] = ch;
+	ring_buf.w_idx++;
+	if(ring_buf.w_idx == CIRC_BUFFER_SIZE)
+		ring_buf.w_idx = 0;
+	ring_buf.len++;	
+}
+
+/* function to read from the circular buffer */
+static uint8_t circ_buf_output() {
+	uint8_t retval;
+	retval=ring_buf.data[ring_buf.r_idx];
+	ring_buf.r_idx++;
+	if(ring_buf.r_idx == CIRC_BUFFER_SIZE)
+		ring_buf.r_idx = 0;
+	ring_buf.len--;
+	return retval;
+}
+
 
 int main() {
 	uint8_t status;
 	
 	uart_init();
-	uart_set_RX_handler(handle_input);
+	uart_set_RX_handler(circ_buf_input);
 	uart_RX_IE(true);
 	
 	spi_init();
@@ -64,7 +92,7 @@ int main() {
 		return EXIT_FAILURE;
 	}
 	
-	uart_puts("\r\nConnected.");
+	//uart_puts("\r\nConnected");	
 	
 	sei(); /* Enable interrupts */
 
@@ -77,21 +105,20 @@ int main() {
 static void rf_to_uart(void){
 	
 	static uint8_t pkt_id = UINT8_MAX; /* Number of the packet we are currently receiving */
-	uint8_t rx_pkt_len; /* Length of packet received from RF24 */
-	uint8_t rx_pkt_buf[NRF24_MAX_PAYLOAD]; /* Stores packets from RF24 */
+	uint8_t pkt_len; /* Length of packet received from RF24 */
+	uint8_t pkt_buf[NRF24_MAX_PAYLOAD]; /* Stores packets from RF24 */
 
-	
 	if(nrf24_dataReady() == NRF24_DATA_AVAILABLE){
 
-		nrf24_getData(rx_pkt_buf, &rx_pkt_len); /* Get data from RF24 */
+		nrf24_getData(pkt_buf, &pkt_len); /* Get data from RF24 */
 
 		/* First byte identifies this packet. If it's a new one, we process it */
-		if (rx_pkt_buf[0] != pkt_id) {
+		if (pkt_buf[0] != pkt_id) {
 
-			pkt_id = rx_pkt_buf[0];
-			for (uint8_t i = PKT_DATA_START; i < rx_pkt_len; i++)
+			pkt_id = pkt_buf[0];
+			for (uint8_t i = PKT_DATA_START; i < pkt_len; i++)
 			{
-				uart_putc(rx_pkt_buf[i]); /* Redirect to UART */
+				uart_putc(pkt_buf[i]); /* Redirect to UART */
 			}
 		}
 	}
@@ -104,16 +131,16 @@ static void uart_to_rf(void) {
 	uint32_t tx_retries = 50;
 	
 	static uint8_t pkt_id = 0; /* Number of the packet we are currently sending */
-	uint8_t pkt_len;
+	uint8_t pkt_len=0;
 	uint8_t pkt_buf[NRF24_MAX_PAYLOAD];
-	
+
 	/* If there is no transmission for a while, start over */
 	if (!first_tx_timeout--)
 	{
 		first_tx_timeout=TX_TIMEOUT;
 		first_tx=true;
 	}
-
+	
 	/* First transmission sends a reset command to the Luminary program
 	* and waits for it to enter the bootloader before sending data */
 	if (first_tx) {
@@ -125,27 +152,41 @@ static void uart_to_rf(void) {
 		nrf24_wait_tx_result();
 
 		/* Give the board time to reboot and enter the bootloader */
-		_delay_ms(100);
+		_delay_ms(30);
 		
 		first_tx = false;
 	}
-	else if (ring_buf.len){ /* If there is data in the FIFO */
 
+	else if (!circ_buf_empty()){ /* If there is data in the UART buffer  */
+		
 		/* First byte of the buffer has the packet identifier  */
-		pkt_buf[PKT_ID_IDX] = pkt_id ++;
+		pkt_buf[PKT_ID_IDX] = pkt_id ++; /* May overflow, but that's ok */
 		
 		/* Accessing ring_buf.len should be atomic */
 		pkt_len = min(ring_buf.len, MAX_PLD_SIZE); /* Number of bytes to send [1-31] */
 
 		cli(); /* Mutual exclusion with UART interrupt */
 		
-		memcpy(pkt_buf+PKT_DATA_START, ring_buf.data, pkt_len); /* Copy bytes from FIFO into the payload array */
-		
-		memmove(ring_buf.data, ring_buf.data+pkt_len, FIFO_SIZE-pkt_len); /* Shift FIFO data to the start position */
-		
-		ring_buf.len -= pkt_len;
-		
+		for(uint8_t i=0; i<pkt_len; i++){
+			pkt_buf[PKT_DATA_START+i]=circ_buf_output();
+		}
+
 		sei(); /* End of exclusion */
+		
+		#if 0
+		uint8_t buf[10];
+		sprintf(buf, "%d ", pkt_buf[0]);
+		uart_puts(buf);
+		for (uint8_t i=1; i<=pkt_len; i++)
+		{
+			if(pkt_buf[i] == '\r')
+				uart_puts("\r\n");
+			else{
+				sprintf(buf, "%c ", pkt_buf[i]);
+				uart_puts(buf);
+			}
+		}
+		#endif
 		
 		while (tx_retries--) { /* Send until received or timeout */
 
@@ -155,7 +196,7 @@ static void uart_to_rf(void) {
 			
 			_delay_ms(4); /* Give the receiver some time to process data */
 		}
-
+		
 		/* Reset timeout */
 		first_tx_timeout = TX_TIMEOUT;
 	}

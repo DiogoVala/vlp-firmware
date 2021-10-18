@@ -387,6 +387,9 @@ int main(void) {
  * of through the UART.  Otherwise all communication goes through the UART
  * as normal.
  */
+
+#define PKT_DATA_START 1 /* Start of data in the transfer buffer */
+#define MAX_PLD_SIZE 31
 #define RADIO_ON 1
 #define RADIO_OFF 0
 static uint8_t radio_mode = RADIO_OFF;
@@ -423,12 +426,9 @@ static void radio_init(void) {
 
 void putch(char ch) {
 
-	/*
-	while (( UCSR0A & _BV(UDRE0)) == 0);
-	UDR0 = ch;
-	*/
-	static uint8_t tx_pkt_len = 1; /* Number of bytes in the local buffer */
-	static uint8_t tx_pkt_buf[32]; /* Local buffer to store bytes before sending */
+	static uint8_t pkt_id = 0; /* Number of the packet we are currently sending */
+    static uint8_t pkt_len = 0;
+    static uint8_t pkt_buf[NRF24_MAX_PAYLOAD];
 
 	if (radio_mode == RADIO_OFF) {
 		while (1) {
@@ -438,12 +438,12 @@ void putch(char ch) {
 		}
 	}
 	else { /* Radio ON */
-		tx_pkt_buf[tx_pkt_len++] = ch; /* Fills the local buffer */
+		pkt_buf[PKT_DATA_START+pkt_len++] = ch; /* Fills the local buffer */
 
-		if (ch == STK_OK || tx_pkt_len == NRF24_MAX_PAYLOAD - 1) { /* When last message or buffer full */
+		if (ch == STK_OK || pkt_len == MAX_PLD_SIZE) { /* When last message or buffer full */
 			while (1) { /* Send buffer until received */
 
-				nrf24_sendData(tx_pkt_buf, tx_pkt_len);
+				nrf24_sendData(pkt_buf, pkt_len);
 				if (nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
 					break; /* Payload sent and acknowledged*/
 
@@ -452,8 +452,8 @@ void putch(char ch) {
 			}
 
 			/* Reset the local buffer */
-			tx_pkt_len = 1; /* Only the identifier is stored */
-			tx_pkt_buf[0] ++; /* Packet Identifier */
+			pkt_len = 0;
+			pkt_buf[0] ++; /* Packet Identifier */
 		}
 	}
 
@@ -513,7 +513,7 @@ uint8_t getch(void) {
 
 			/* If our local buffer is empty, get more data */
 			while(pkt_len == 0) {
-				nrf24_getData(rx_pkt_buf, &rx_pkt_len);
+				nrf24_getData(pkt_buf, &pkt_len);
 
 				if (pkt_buf[0] == pkt_id) { /* We have already received this packet */
             		pkt_len = 0; /* Ignore it */
