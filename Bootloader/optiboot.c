@@ -387,6 +387,9 @@ int main(void) {
  * of through the UART.  Otherwise all communication goes through the UART
  * as normal.
  */
+
+#define PKT_DATA_START 1 /* Start of data in the transfer buffer */
+#define MAX_PLD_SIZE 31
 #define RADIO_ON 1
 #define RADIO_OFF 0
 static uint8_t radio_mode = RADIO_OFF;
@@ -423,12 +426,9 @@ static void radio_init(void) {
 
 void putch(char ch) {
 
-	/*
-	while (( UCSR0A & _BV(UDRE0)) == 0);
-	UDR0 = ch;
-	*/
-	static uint8_t tx_pkt_len = 1; /* Number of bytes in the local buffer */
-	static uint8_t tx_pkt_buf[32]; /* Local buffer to store bytes before sending */
+	//static uint8_t pkt_id = 0; /* Number of the packet we are currently sending */
+    static uint8_t pkt_len = 0;
+    static uint8_t pkt_buf[NRF24_MAX_PAYLOAD];
 
 	if (radio_mode == RADIO_OFF) {
 		while (1) {
@@ -438,12 +438,12 @@ void putch(char ch) {
 		}
 	}
 	else { /* Radio ON */
-		tx_pkt_buf[tx_pkt_len++] = ch; /* Fills the local buffer */
+		pkt_buf[PKT_DATA_START+pkt_len++] = ch; /* Fills the local buffer */
 
-		if (ch == STK_OK || tx_pkt_len == NRF24_MAX_PAYLOAD - 1) { /* When last message or buffer full */
+		if (ch == STK_OK || pkt_len == MAX_PLD_SIZE) { /* When last message or buffer full */
 			while (1) { /* Send buffer until received */
 
-				nrf24_sendData(tx_pkt_buf, tx_pkt_len);
+				nrf24_sendData(pkt_buf, pkt_len);
 				if (nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
 					break; /* Payload sent and acknowledged*/
 
@@ -452,8 +452,8 @@ void putch(char ch) {
 			}
 
 			/* Reset the local buffer */
-			tx_pkt_len = 1; /* Only the identifier is stored */
-			tx_pkt_buf[0] ++; /* Packet Identifier */
+			pkt_len = 0;
+			pkt_buf[0]++; /* Packet Identifier */
 		}
 	}
 
@@ -489,55 +489,53 @@ void putch(char ch) {
 }
 
 uint8_t getch(void) {
-	uint8_t ch = '\0';
-	static uint8_t pkt_id = UINT8_MAX; /* Number of the packet we are currently receiving */
-	static uint8_t rx_pkt_len = 0; /* Number of bytes in the local buffer */
-	static uint8_t rx_pkt_ptr = 1; /* Start of data in the buffer */
-	static uint8_t rx_pkt_buf[32]; /* Local buffer to store bytes before sending */
 
-	watchdogReset();
+	uint8_t ch = '\0';
+ 	static uint8_t pkt_id = UINT8_MAX;  /* Number (ID) of the packet */
+    static uint8_t pkt_len = 0;  /* Number of bytes in the local buffer */
+    static uint8_t pkt_ptr = PKT_DATA_START;  /* Start of data in the buffer */
+    static uint8_t pkt_buf[32];  /* Local buffer to store bytes */
 
 	while (1) {
 		if (( UCSR0A & (1 << RXC0)) != 0) /* If we have data in the UART */
 		{
 			watchdogReset();
 			ch = UDR0;
-			break;
+			return ch;
 		}
 
 		/* If there is data in the local buffer or new data in RF24 fifo */
-		if (rx_pkt_len || nrf24_dataReady() == NRF24_DATA_AVAILABLE) {
+		if (pkt_len || nrf24_dataReady() == NRF24_DATA_AVAILABLE) {
 			watchdogReset();
 			radio_mode = RADIO_ON; /* From now on, we're in radio mode */
 
 			/* If our local buffer is empty, get more data */
-			if (rx_pkt_len == 0) {
-				nrf24_getData(rx_pkt_buf, &rx_pkt_len);
+			while(pkt_len == 0) {
+				nrf24_getData(pkt_buf, &pkt_len);
 
-				if (rx_pkt_buf[0] == pkt_id) { /* We have already received this packet before */
-					rx_pkt_len = 0; /* Ignore it */
-				}
-				else
-				{
-					pkt_id = rx_pkt_buf[0]; /* It's a new packet, update the current ID */
-				}
+				if (pkt_buf[0] == pkt_id) { /* We have already received this packet */
+            		pkt_len = 0; /* Ignore it */
+		        }
+		        else {
+		            pkt_id = pkt_buf[0]; /* It's a new packet, update the current ID */
+		            pkt_ptr=PKT_DATA_START;
+		            break;
+		        }
 			}
 
 			/* If there is data in the local buffer */
-			if (rx_pkt_len)
-			{
-				ch = rx_pkt_buf[rx_pkt_ptr]; /* Grab next byte in the buffer */
-				rx_pkt_ptr++;
-				rx_pkt_len--;
-				if (rx_pkt_len == 0) /* We have read all the bytes in the buffer */
-				{
-					rx_pkt_ptr = 1; /* Reset the data pointer */
-				}
-				break;
-			}
+		    if (pkt_ptr < pkt_len ) {
+		        ch = pkt_buf[pkt_ptr++]; /* Grab next byte in the buffer */
+
+		        if (pkt_ptr == pkt_len) { /* We have read all the bytes in the buffer */
+		            /* Reset the buffer */
+		            pkt_ptr = PKT_DATA_START; 
+		            pkt_len = 0;
+		        }
+		        return ch;
+		    }
 		}
 	}
-	return ch;
 }
 
 
