@@ -489,11 +489,12 @@ void putch(char ch) {
 }
 
 uint8_t getch(void) {
+
 	uint8_t ch = '\0';
-	static uint8_t pkt_id = UINT8_MAX; /* Number of the packet we are currently receiving */
-	static uint8_t rx_pkt_len = 0; /* Number of bytes in the local buffer */
-	static uint8_t rx_pkt_ptr = 1; /* Start of data in the buffer */
-	static uint8_t rx_pkt_buf[32]; /* Local buffer to store bytes before sending */
+ 	static uint8_t pkt_id = UINT8_MAX;  /* Number (ID) of the packet */
+    static uint8_t pkt_len = 0;  /* Number of bytes in the local buffer */
+    static uint8_t pkt_ptr = 1;  /* Start of data in the buffer */
+    static uint8_t pkt_buf[32];  /* Local buffer to store bytes */
 
 	watchdogReset();
 
@@ -502,7 +503,7 @@ uint8_t getch(void) {
 		{
 			watchdogReset();
 			ch = UDR0;
-			break;
+			return ch;
 		}
 
 		/* If there is data in the local buffer or new data in RF24 fifo */
@@ -511,33 +512,32 @@ uint8_t getch(void) {
 			radio_mode = RADIO_ON; /* From now on, we're in radio mode */
 
 			/* If our local buffer is empty, get more data */
-			if (rx_pkt_len == 0) {
+			while(pkt_len == 0) {
 				nrf24_getData(rx_pkt_buf, &rx_pkt_len);
 
-				if (rx_pkt_buf[0] == pkt_id) { /* We have already received this packet before */
-					rx_pkt_len = 0; /* Ignore it */
-				}
-				else
-				{
-					pkt_id = rx_pkt_buf[0]; /* It's a new packet, update the current ID */
-				}
+				if (pkt_buf[0] == pkt_id) { /* We have already received this packet */
+            		pkt_len = 0; /* Ignore it */
+		        }
+		        else {
+		            pkt_id = pkt_buf[0]; /* It's a new packet, update the current ID */
+		            pkt_ptr=1;
+		            break;
+		        }
 			}
 
 			/* If there is data in the local buffer */
-			if (rx_pkt_len)
-			{
-				ch = rx_pkt_buf[rx_pkt_ptr]; /* Grab next byte in the buffer */
-				rx_pkt_ptr++;
-				rx_pkt_len--;
-				if (rx_pkt_len == 0) /* We have read all the bytes in the buffer */
-				{
-					rx_pkt_ptr = 1; /* Reset the data pointer */
-				}
-				break;
-			}
+		    if (pkt_ptr < pkt_len ) {
+		        ch = pkt_buf[pkt_ptr++]; /* Grab next byte in the buffer */
+
+		        if (pkt_ptr == pkt_len) { /* We have read all the bytes in the buffer */
+		            /* Reset the buffer */
+		            pkt_ptr = 1; 
+		            pkt_len = 0;
+		        }
+		        return ch;
+		    }
 		}
 	}
-	return ch;
 }
 
 
