@@ -104,7 +104,7 @@ int main() {
 		return(EXIT_FAILURE);
 	}
 	
-	uart_puts("\r\nInitialization Complete.");
+	uart_puts("\r\nInitialization Complete._1");
 	
 	while (1) {
 		/* Checks for incoming messages and updates LED */

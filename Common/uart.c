@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <avr/interrupt.h>
+
 /* File includes */
 #include "uart.h"
 
@@ -24,6 +26,9 @@ void uart_init()
 	
 	/* Enable Receiver and Transmitter */
 	UCSR0B = _BV(RXEN0) | _BV(TXEN0);
+	
+	/* Double speed*/
+	UCSR0A = _BV(U2X0);
 }
 
 
@@ -31,6 +36,7 @@ void uart_RX_IE(bool RX_IE)
 {
 	if(RX_IE){
 		UCSR0B |= _BV(RXCIE0); /* Enable RX Interrupt */
+		sei();
 	}
 }
 
@@ -67,22 +73,13 @@ void uart_set_RX_handler(void (*handler)(uint8_t ch)) {
 }
 
 /* UART RX ISR*/
-void ISR(USART_RX_vect) {
-	uint8_t status = UCSR0A;
-	uint8_t ch;
-	uint8_t dummy;
+ISR(USART_RX_vect) {
 
+	uint8_t ch;
+	
 	if (uart_rx_handler != NULL ) /*Check if callback function exists */
 	{
-		/* If RX complete, no frame error and no parity error*/
-		if((status & RXC0) && !(status & FE0) && !(status & UPE0))
-		{
-			ch = UDR0; /* Read data */
-			uart_rx_handler(ch); /* Place the read character in the desired data structure */
-		} 
-		else
-		{
-			dummy = UDR0; /* Dummy read to clear register */
-		}
+		ch = UDR0; /* Read data */
+		uart_rx_handler(ch); /* Place the read character in the desired data structure */
 	}
 }

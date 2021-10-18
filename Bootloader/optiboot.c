@@ -426,7 +426,11 @@ static void radio_init(void) {
 
 void putch(char ch) {
 
+<<<<<<< HEAD
 	//static uint8_t pkt_id = 0; /* Number of the packet we are currently sending */
+=======
+	static uint8_t pkt_id = 0; /* Number of the packet we are currently sending */
+>>>>>>> c8187631d543943dab0452faf17a9ac17573e928
     static uint8_t pkt_len = 0;
     static uint8_t pkt_buf[NRF24_MAX_PAYLOAD];
 
@@ -453,7 +457,11 @@ void putch(char ch) {
 
 			/* Reset the local buffer */
 			pkt_len = 0;
+<<<<<<< HEAD
 			pkt_buf[0]++; /* Packet Identifier */
+=======
+			pkt_buf[0] ++; /* Packet Identifier */
+>>>>>>> c8187631d543943dab0452faf17a9ac17573e928
 		}
 	}
 
@@ -489,6 +497,15 @@ void putch(char ch) {
 }
 
 uint8_t getch(void) {
+<<<<<<< HEAD
+=======
+
+	uint8_t ch = '\0';
+ 	static uint8_t pkt_id = UINT8_MAX;  /* Number (ID) of the packet */
+    static uint8_t pkt_len = 0;  /* Number of bytes in the local buffer */
+    static uint8_t pkt_ptr = 1;  /* Start of data in the buffer */
+    static uint8_t pkt_buf[32];  /* Local buffer to store bytes */
+>>>>>>> c8187631d543943dab0452faf17a9ac17573e928
 
 	uint8_t ch = '\0';
  	static uint8_t pkt_id = UINT8_MAX;  /* Number (ID) of the packet */
@@ -518,7 +535,11 @@ uint8_t getch(void) {
 		        }
 		        else {
 		            pkt_id = pkt_buf[0]; /* It's a new packet, update the current ID */
+<<<<<<< HEAD
 		            pkt_ptr=PKT_DATA_START;
+=======
+		            pkt_ptr=1;
+>>>>>>> c8187631d543943dab0452faf17a9ac17573e928
 		            break;
 		        }
 			}
@@ -529,7 +550,11 @@ uint8_t getch(void) {
 
 		        if (pkt_ptr == pkt_len) { /* We have read all the bytes in the buffer */
 		            /* Reset the buffer */
+<<<<<<< HEAD
 		            pkt_ptr = PKT_DATA_START; 
+=======
+		            pkt_ptr = 1; 
+>>>>>>> c8187631d543943dab0452faf17a9ac17573e928
 		            pkt_len = 0;
 		        }
 		        return ch;
