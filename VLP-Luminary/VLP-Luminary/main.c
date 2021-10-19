@@ -73,14 +73,14 @@ ISR(TIMER1_COMPB_vect) // Timer1 ISR COMPB
 
 int main() {
 	
-	wdt_disable();
+	//wdt_disable();
 	
 	uint8_t LED_HW_ID;
 	uint8_t TX_addr[NRF24_ADDR_WIDTH]={'M', 'T', 'R'};
 	uint8_t RX_addr[NRF24_ADDR_WIDTH]={'L', 'M', '1'};
 		
 	uint8_t status;
-	
+
 	uart_init();
 	
 	//uart_puts("\n\x1b[2J\r"); /*Clear screen */
