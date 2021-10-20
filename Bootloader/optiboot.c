@@ -413,6 +413,8 @@ static void radio_init(void) {
 
 	spi_init();
 
+	DDRB |= (1<<DDB1);
+
 	nrf24_config(TX_addr, RX_addr);
 	/*
 	uint8_t ch='a';
@@ -426,7 +428,7 @@ static void radio_init(void) {
 
 void putch(char ch) {
 
-    uint8_t pkt_len = 0;
+    uint8_t pkt_len = 1; /* There's always at least the ID byte */
     uint8_t pkt_buf[NRF24_MAX_PAYLOAD]={};
     uint32_t tx_retries = 500;
 
@@ -439,7 +441,7 @@ void putch(char ch) {
 	}
 	else { /* Radio ON */
 		pkt_buf[0]++;
-		pkt_buf[PKT_DATA_START+pkt_len++] = ch; /* Fills the local buffer */
+		pkt_buf[pkt_len++] = ch; /* Fill the local buffer */
 
 		if ((ch == STK_OK) || (pkt_len == MAX_PLD_SIZE)) { /* When last byte or buffer full */
 			while (tx_retries--) { /* Send buffer until received */
@@ -456,36 +458,6 @@ void putch(char ch) {
 			pkt_len = 0;
 		}
 	}
-
-	//return;
-#if 0
-
-
-	if (radio_mode == RADIO_ON) {
-
-		tx_pkt_buf[tx_pkt_len++] = ch; /* Fills the local buffer */
-
-		if (ch == STK_OK || tx_pkt_len == NRF24_MAX_PAYLOAD - 1) { /* When last message or buffer full */
-			while (1) { /* Send buffer until received */
-
-				nrf24_sendData(tx_pkt_buf, tx_pkt_len);
-				if (nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
-					break; /* Payload sent and acknowledged*/
-
-				/* Wait 4ms to allow the remote end to switch to Rx mode */
-				my_delay(4);
-			}
-
-			/* Reset the local buffer */
-			tx_pkt_len = 1; /* Only the identifier is stored */
-			tx_pkt_buf[0] ++; /* Packet Identifier */
-		}
-	}
-	else {
-		while (!(UCSR0A & _BV(UDRE0)));
-		UDR0 = ch;
-	}
-#endif
 }
 
 uint8_t getch(void) {
@@ -496,44 +468,49 @@ uint8_t getch(void) {
     static uint8_t pkt_ptr = 1;  /* Start of data in the buffer */
     static uint8_t pkt_buf[32];  /* Local buffer to store bytes */
 
-	//watchdogReset();
-
 	while (1) {
-		if (( UCSR0A & (1 << RXC0)) != 0) /* If we have data in the UART */
-		{
-			watchdogReset();
-			ch = UDR0;
-			return ch;
+		if(radio_mode == RADIO_OFF){
+			if (( UCSR0A & (1 << RXC0)) != 0) /* If we have data in the UART */
+			{
+				watchdogReset();
+				ch = UDR0;
+				return ch;
+			}
 		}
-
 		/* If there is data in the local buffer or new data in RF24 fifo */
 		if (pkt_len || (nrf24_dataReady() == NRF24_DATA_AVAILABLE)) {
 			watchdogReset();
 			radio_mode = RADIO_ON; /* From now on, we're in radio mode */
 
-			/* If our local buffer is empty, get more data */
+			/* If our local buffer is empty, get more data from RF24 */
 			while(pkt_len == 0) {
 				nrf24_getData(pkt_buf, &pkt_len);
 
-				if (pkt_buf[0] == pkt_id) { /* We have already received this packet */
-            		pkt_len = 0; /* Ignore it */
-		        }
-		        else if (pkt_buf[0] != pkt_id){
-		            pkt_id = pkt_buf[0]; /* It's a new packet, update the current ID */
-		            pkt_ptr=1;
-		            break;
-		        }
+				if(pkt_len>1){ /* Sanity check: pkt_len should always have a minimum of 2 bytes */
+					if (pkt_buf[0] == pkt_id) { /* We have already received this packet */
+	            		pkt_len = 0; /* Ignore it */
+			        }
+			        else{
+			            pkt_id = pkt_buf[0]; /* It's a new packet, update the current ID */
+			            pkt_len-=1; /* Ignore the first byte, which is the ID */
+			            pkt_ptr=1;
+			            break;
+			        }
+			    }
+			    else{
+			    	pkt_len=0;
+			    }
 			}
 
 			/* If there is data in the local buffer */
-		    if (pkt_ptr < pkt_len ) {
+		    if (pkt_len) {
 		        ch = pkt_buf[pkt_ptr]; /* Grab next byte in the buffer */
 		        pkt_ptr++;
+		        pkt_len--;
 
-		        if (pkt_ptr == pkt_len) { /* We have read all the bytes in the buffer */
-		            /* Reset the buffer */
+		        if (pkt_len == 0) { /* We have read all the bytes in the buffer */
+		            /* Reset the buffer data pointer */
 		            pkt_ptr = 1; 
-		            pkt_len = 0;
 		        }
 		        return ch;
 		    }
