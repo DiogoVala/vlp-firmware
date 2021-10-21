@@ -14,6 +14,8 @@
 /* Macro functions d*/
 #define set_bit(REGISTER, BIT)    REGISTER |=  _BV(BIT)
 #define clr_bit(REGISTER, BIT)    REGISTER &= ~(_BV(BIT))
+#define check_bit(REGISTER, BIT) (REGISTER & (_BV(BIT))) >> BIT
+#define xor_bit(REGISTER, BIT)    REGISTER ^= _BV(BIT)
 
 #endif
 
