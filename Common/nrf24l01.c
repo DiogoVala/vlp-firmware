@@ -10,6 +10,7 @@
 
 /* Library includes */
 #include <util/delay.h>
+#include <stdio.h>
 
 /* File includes */
 #include "nrf24l01.h"
@@ -268,6 +269,11 @@ uint8_t nrf24_wait_tx_result()
 /* Set chip as receiver */
 void nrf24_setMode_RX()
 {
+	/* Flush RX FIFO */
+	nrf24_csn_digitalWrite(LOW);
+	spi_exchange(FLUSH_RX);
+	nrf24_csn_digitalWrite(HIGH);
+	
 	if(rf24_mode != MODE_RX){
 		/* Config RF24 as receiver */
 		nrf24_configRegister(CONFIG,nrf24_CONFIG|((1<<PWR_UP)|(1<<PRIM_RX)));
@@ -288,17 +294,17 @@ void nrf24_setMode_RX()
 /* Set chip as transmitter */
 void nrf24_setMode_TX()
 {
+	/* Flush TX FIFO */
+	nrf24_csn_digitalWrite(LOW);
+	spi_exchange(FLUSH_TX);
+	nrf24_csn_digitalWrite(HIGH);
+	
 	if(rf24_mode != MODE_TX){
 		/* Turn on chip in TX mode*/
 		nrf24_configRegister(CONFIG, nrf24_CONFIG | (1<<PWR_UP) | (0<<PRIM_RX) );
 	
 		/* Enable receiver address on pipe 0 for ACKs*/
 		nrf24_configRegister(EN_RXADDR,(1<<ERX_P0)|(0<<ERX_P1));
-	
-		/* Flush TX FIFO */
-		nrf24_csn_digitalWrite(LOW);
-		spi_exchange(FLUSH_TX);
-		nrf24_csn_digitalWrite(HIGH);
 	
 		/* Settling time */
 		_delay_us(100); 

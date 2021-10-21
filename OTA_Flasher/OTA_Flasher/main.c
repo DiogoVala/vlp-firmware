@@ -22,18 +22,31 @@
 #include "../../Common/spi.h"
 #include "../../Common/nrf24l01.h"
 
-#define	MAX_PLD_SIZE (NRF24_MAX_PAYLOAD - 1) /* Number of data bytes in the payload */
-#define PKT_ID_IDX 0 /* First byte of the payload is reserved for the packet identifier */
-#define PKT_DATA_START 1 /* Size of the packet identifier (in bytes) */
-#define CIRC_BUFFER_SIZE 254 /* Number of bytes in the data buffer that stores received bytes from UART */
 #define TX_TIMEOUT 50000 /* Some generic timeout value if there is no transmission for a while */
+#define	MAX_PLD_SIZE (NRF24_MAX_PAYLOAD - 1) /* Number of data bytes in the payload */
+#define PKT_ID_IDX 0 /* First byte of the packet is reserved for the packet identifier */
+#define PKT_DATA_START 1 /* Index of actual data in the transmission packet  */
+#define TX_RETRIES 10000
+#define UART_BUFFER_SIZE 512 /* Number of bytes in the data buffer that stores received bytes from UART */
+
+#define my_delay(msec) delay8((int) (F_CPU / 8000L * (msec)))
 
 /* STK500 Messages */
 #define CRC_EOP 0x20  /* Every avrdude message ends with this byte */
 
-static bool new_tx=false;
+static bool first_tx = false;
 
+/* When CRC_EOP is received, new_tx turns true, which means a message is ready to be sent */
+static bool new_tx = false;
+
+/* UART Buffer */
+static uint8_t uart_buffer[UART_BUFFER_SIZE];
+static uint8_t buf_len=0;
+
+/* This is the command that the luminary firmware is expecting before performing a reset */
 static uint8_t reset_cmd[]={0xFF};
+	
+/* RX address is this module's address and TX address is the target luminary's address */
 uint8_t RX_addr[NRF24_ADDR_WIDTH]={'M', 'T', 'R'};
 uint8_t TX_addr[NRF24_ADDR_WIDTH]={'L', 'M', '1'};
 
@@ -41,58 +54,34 @@ uint8_t TX_addr[NRF24_ADDR_WIDTH]={'L', 'M', '1'};
 static void uart_to_rf(void);
 static void rf_to_uart(void);
 uint8_t min(uint8_t x, uint8_t y);
+static void delay8(uint16_t count);
 
-/* FIFO to receive data from UART ISR */
-static struct ring_buffer_s {
-	uint8_t data[CIRC_BUFFER_SIZE];
-	uint8_t len; /* Number of bytes currently stored */
-	uint8_t r_idx;
-	uint8_t w_idx;
-} ring_buf;
-
-static bool circ_buf_empty() {
-	return(ring_buf.len == 0);
-}
-
-static bool circ_buf_full() {
-	return(ring_buf.len == CIRC_BUFFER_SIZE);
-}
-
-/* function to fill the circular buffer */
-static void circ_buf_input(volatile uint8_t ch) {
-	if(circ_buf_full()){
-		//uart_puts("\r\nBuffer full");
-		return;
-	}
+static void uart_handler(uint8_t byte){
 	
-		
-	ring_buf.data[ring_buf.w_idx] = ch;
-	ring_buf.w_idx++;
-	if(ring_buf.w_idx == CIRC_BUFFER_SIZE)
-	ring_buf.w_idx = 0;
-	ring_buf.len++;
+	first_tx=true;
 	
-	if(ch == CRC_EOP){
+	uart_buffer[buf_len++]=byte;
+	
+	if(byte == CRC_EOP){ /* End of AVRDUDE message */
 		new_tx=true;
 	}
-}
-
-/* function to read from the circular buffer */
-static uint8_t circ_buf_output() {
-	uint8_t retval;
-	retval=ring_buf.data[ring_buf.r_idx];
-	ring_buf.r_idx++;
-	if(ring_buf.r_idx == CIRC_BUFFER_SIZE)
-	ring_buf.r_idx = 0;
-	ring_buf.len--;
-	return retval;
+	#if 0
+	if(byte == 'b')
+	{
+		for (uint16_t i= 0; i < buf_len; i++)
+		{
+			uart_putc(uart_buffer[i]);
+		}
+		uart_puts("\r\n");
+	}
+	#endif
 }
 
 int main() {
 	uint8_t status;
 	
 	uart_init();
-	uart_set_RX_handler(circ_buf_input);
+	uart_set_RX_handler(uart_handler);
 	uart_RX_IE(true);
 	
 	spi_init();
@@ -100,13 +89,22 @@ int main() {
 	status=nrf24_config(TX_addr, RX_addr);
 	if(status!=NRF24_CHIP_NOMINAL)
 	{
-		uart_puts("\r\nChip Disconnected");
+		//uart_puts("\r\nChip Disconnected");
 		return EXIT_FAILURE;
 	}
 		
 	sei(); /* Enable interrupts */
 
+	uint8_t test[]={1,2,3,4,5,6,7,8,9};
+	
+	
 	while(1){
+		#if 0
+		nrf24_sendData(test, 8); /* ID + buffer */
+		nrf24_wait_tx_result();
+		for(uint32_t i=0; i<10000000; i++);
+		#endif
+		
 		uart_to_rf();
 		rf_to_uart();
 	}
@@ -115,18 +113,21 @@ int main() {
 static void rf_to_uart(void){
 	
 	static uint8_t pkt_id = UINT8_MAX; /* Number of the packet we are currently receiving */
-	uint8_t pkt_len; /* Length of packet received from RF24 */
-	uint8_t pkt_buf[NRF24_MAX_PAYLOAD]; /* Stores packets from RF24 */
+	static uint8_t pkt_len=0; /* Length of packet received from RF24 */
+	static uint8_t pkt_buf[NRF24_MAX_PAYLOAD]; /* Stores packets from RF24 */
 
-	if(nrf24_dataReady() == NRF24_DATA_AVAILABLE){
+	//while(nrf24_rxFifoEmpty() == NRF24_DATA_UNAVAILABLE);
+
+	if(nrf24_rxFifoEmpty() == NRF24_DATA_AVAILABLE){
 		
 		nrf24_getData(pkt_buf, &pkt_len); /* Get data from RF24 */
 		
-		if(pkt_len){ /* Sanity check */
+		if(pkt_len){ /* Sanity check: getData should never return 0 as pkt_len */
+			
 			/* First byte identifies this packet. If it's a new one, we process it */
 			if (pkt_buf[0] != pkt_id) {
-
 				pkt_id = pkt_buf[0];
+				
 				for (uint8_t i = PKT_DATA_START; i < pkt_len; i++)
 				{
 					uart_putc(pkt_buf[i]); /* Redirect to UART */
@@ -138,25 +139,16 @@ static void rf_to_uart(void){
 
 static void uart_to_rf(void) {
 
-	static bool first_tx = true;
-	static uint32_t first_tx_timeout = TX_TIMEOUT;
 	static bool first_tx_complete = false;
-	uint32_t tx_retries = 500;
+	
+	uint32_t tx_retries = TX_RETRIES; 
 	
 	static uint8_t pkt_id = 0; /* Number of the packet we are currently sending */
-	uint8_t pkt_len=0;
-	uint8_t pkt_buf[NRF24_MAX_PAYLOAD];
+	uint8_t pkt_len=0; /* Length of the packet we are sending (does not include the ID byte) */
+	uint8_t pkt_buf[NRF24_MAX_PAYLOAD]; /* Buffer where we store the packet before sending */
 
-	/* If there is no transmission for a while, start over */
-	if (!first_tx_timeout--)
-	{
-		first_tx_complete=false;
-		first_tx_timeout=TX_TIMEOUT;
-		first_tx=true;
-	}
-	
 	/* First transmission sends a reset command to the Luminary program
-	* and waits for it to enter the bootloader before sending data */
+	* and waits for it to enter the Bootloader before sending data */
 	if (first_tx) {
 		/*
 		* Our protocol requires any program running on the board
@@ -166,63 +158,93 @@ static void uart_to_rf(void) {
 			nrf24_sendData(reset_cmd, 1);
 			if(nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
 			first_tx_complete=true;
+			
+			/* Give the board time to reboot and enter the Bootloader */
+			my_delay(100);
+			
+			
 		}
 
-		/* Give the board time to reboot and enter the bootloader */
-		_delay_ms(100);
-		
 		first_tx = false;
 	}
-	
-	else if(new_tx){ /* A new avrdude packet has been assembled in the buffer */
+	else if(new_tx){ /* A new AVRDUDE packet has been assembled in the buffer and is ready to be sent */
 
-		pkt_len = min(ring_buf.len, MAX_PLD_SIZE); /* Number of bytes to send [1-31] */
+		cli();
+		pkt_len = min(buf_len, MAX_PLD_SIZE); /* Number of bytes to send [1-31] */
+		sei();
+		/*
+		if (tx_cnt == 2 && pkt_len == MAX_PLD_SIZE)
+			pkt_len = MAX_PLD_SIZE - 2;
+		else if (tx_cnt == 3)
+			pkt_len = 1;
+		*/
 		
 		while(pkt_len != 0){ /* Send the buffer contents until all is sent */
-			
-			/* First byte of the buffer has the packet identifier  */
-			pkt_buf[PKT_ID_IDX] = pkt_id ++; /* May overflow, but that's ok */
 
+			/* First byte of the buffer has the packet identifier  */
+			pkt_buf[PKT_ID_IDX] = pkt_id++; /* May overflow, but that's ok */
+			
+			/* Note: The way the AVRDUDE messages are saved in the UART buffer and 
+			 * then sent should ensure there is always mutual exclusion with the 
+			 * UART ISR but it is safer to disable interrupts while accessing the buffer */
 			cli(); /* Mutual exclusion with UART interrupt */
+			
 			for(uint8_t i=0; i<pkt_len; i++){
-				pkt_buf[PKT_DATA_START+i]=circ_buf_output();
+				pkt_buf[PKT_DATA_START+i]=uart_buffer[i];
 			}
+			
+			/* Shift array to the start */
+			memmove(uart_buffer, uart_buffer+pkt_len, UART_BUFFER_SIZE-pkt_len);
+			buf_len-=pkt_len;
+			
 			sei(); /* End of exclusion */
 			
 			#if 0
 			uint8_t buf[10];
-			sprintf(buf, "%d : ", pkt_buf[0]);
-			uart_puts(buf);
-			for (uint8_t i=1; i<=pkt_len; i++)
+			uart_puts("\r\nPKT:\r\n");
+			for (uint8_t i=0; i<=pkt_len; i++)
 			{
-				if(pkt_buf[i] == '\r')
-				uart_puts("\r\n");
-				else{
-					sprintf(buf, "%c", pkt_buf[i]);
-					uart_puts(buf);
-				}
+				sprintf(buf, "0x%x ", pkt_buf[i]);
+				uart_puts(buf);
 			}
-			uart_puts("\r\n");
 			#endif
 			
-			while (tx_retries--) { /* Send until received or timeout */
+			#if 1
+			tx_retries = TX_RETRIES;
+			while (1) { /* Send until received or retry amount reached */
 
-				nrf24_sendData(pkt_buf, pkt_len);
+				nrf24_sendData(pkt_buf, pkt_len+1); /* ID + buffer */
 				if (nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
 					break;
-				
-				_delay_ms(4); /* Give the receiver some time to process data */
-			}
 
-			/* Accessing ring_buf.len should be atomic */
+				my_delay(10); /* Give the receiver some time to process data */
+			}
+			#endif
+
 			/* Check the remaining number of bytes we still need to send */
-			pkt_len = min(ring_buf.len, MAX_PLD_SIZE); /* Number of bytes to send [1-31] */
+			cli();
+			pkt_len = min(buf_len, MAX_PLD_SIZE); /* Number of bytes to send [1-31] */
+			sei();
 		}
-		new_tx=false; /* avrdude packet was sent */
+		new_tx=false; /* AVRDUDE message was sent */
 	}
-	first_tx_timeout = TX_TIMEOUT; /* Reset timeout */
 }
 
 uint8_t min(uint8_t x, uint8_t y){
 	return (x < y) ? x : y;
+}
+
+
+static void delay8(uint16_t count) {
+	while (count --)
+	__asm__ __volatile__ (
+	"\tnop\n"
+	"\tnop\n"
+	"\tnop\n"
+	"\tnop\n"
+	"\tnop\n"
+	"\tnop\n"
+	"\tnop\n"
+	"\twdr\n"
+	);
 }

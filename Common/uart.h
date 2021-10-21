@@ -9,6 +9,8 @@
 #ifndef UART_H
 #define UART_H
 
+#include <stdbool.h>
+
 #define UART_BAUD_RATE 115200
 
 #ifndef F_CPU
