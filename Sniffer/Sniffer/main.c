@@ -113,11 +113,28 @@ uint8_t getch(void) {
 	return ch; /* Should never be reached */
 }
 
+void listen(){
+	if(nrf24_rxFifoEmpty() == NRF24_DATA_AVAILABLE){
+		nrf24_getData(data, &data_len);
+		
+		uint8_t buf[10]={0};
+		uart_puts("\r\nLen:\r\n");
+		sprintf(buf, "%d, \r\n", data_len);
+		uart_puts(buf);
+		for (uint8_t i=0; i<data_len; i++)
+		{
+			sprintf(buf, "0x%x, ", data[i]);
+			uart_puts(buf);
+		}
+		uart_puts("\r\n");
+	}
+}
+
 int main(void)
 {
 	uint8_t TX_addr[NRF24_ADDR_WIDTH]={'N', 'N', 'N'};
-	uint8_t RX_addr[NRF24_ADDR_WIDTH]={'M', 'T', 'R'};
-	//uint8_t RX_addr[NRF24_ADDR_WIDTH]={'L', 'M', '1'};	
+	//uint8_t RX_addr[NRF24_ADDR_WIDTH]={'M', 'T', 'R'};
+	uint8_t RX_addr[NRF24_ADDR_WIDTH]={'L', 'M', '1'};	
 	
 	uart_init();
 	spi_init();
@@ -129,31 +146,22 @@ int main(void)
 	}
 	uint8_t buf[10];
 	uint8_t ch;
+	
+	
     while(1)
     {
+		
+		//uart_putc('a');
 		//ch=getch();
 		//sprintf(buf, "0x%x, ", ch);
 		//uart_puts(buf);
-		rf_to_uart();
-		_delay_ms(50);
 		
 		
-		#if 0
-		if(nrf24_rxFifoEmpty() == NRF24_DATA_AVAILABLE){
-			nrf24_getData(data, &data_len);
-			
-			uint8_t buf[10]={0};
-			uart_puts("\r\nLen:\r\n");
-			sprintf(buf, "%d, \r\n", data_len);
-			uart_puts(buf);
-			for (uint8_t i=0; i<data_len; i++)
-			{
-				sprintf(buf, "0x%x, ", data[i]);
-				uart_puts(buf);
-			}
-			uart_puts("\r\n");
-		}
-		#endif
+		//rf_to_uart();
+		//_delay_ms(50);
+		
+		listen();
+	
     }
 }
 

@@ -161,12 +161,40 @@ static void uart_to_rf(void) {
 			
 			/* Give the board time to reboot and enter the Bootloader */
 			my_delay(100);
+			//for (uint32_t i=0; i<10000; i++);
 			
 			
 		}
 
 		first_tx = false;
 	}
+	if(buf_len){
+		cli();
+		pkt_len = min(buf_len, MAX_PLD_SIZE); /* Number of bytes to send [1-31] */
+		pkt_buf[0]+=1;
+		for(uint8_t i=0; i<pkt_len; i++){
+			pkt_buf[PKT_DATA_START+i]=uart_buffer[i];
+		}
+		//memmove(uart_buffer, uart_buffer+pkt_len, UART_BUFFER_SIZE-pkt_len);
+		buf_len-=pkt_len;
+		
+		for(uint16_t i=0; i<UART_BUFFER_SIZE-pkt_len; i++)
+		{
+			uart_buffer[i]=uart_buffer[i]+pkt_len;
+		}
+		
+		sei();
+		
+		tx_retries = TX_RETRIES;
+		while (--tx_retries) { /* Send until received or retry amount reached */
+			my_delay(4); /* Give the receiver some time to process data */
+			
+			nrf24_sendData(pkt_buf, pkt_len+1); /* ID + buffer */
+			if (nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
+				break;
+		}
+	}
+	#if 0
 	else if(new_tx){ /* A new AVRDUDE packet has been assembled in the buffer and is ready to be sent */
 
 		cli();
@@ -212,12 +240,14 @@ static void uart_to_rf(void) {
 			#if 1
 			tx_retries = TX_RETRIES;
 			while (1) { /* Send until received or retry amount reached */
-
+				for (uint32_t i=0; i<1000; i++);
+				
 				nrf24_sendData(pkt_buf, pkt_len+1); /* ID + buffer */
 				if (nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
 					break;
 
-				my_delay(10); /* Give the receiver some time to process data */
+				//my_delay(10); /* Give the receiver some time to process data */
+				
 			}
 			#endif
 
@@ -228,6 +258,7 @@ static void uart_to_rf(void) {
 		}
 		new_tx=false; /* AVRDUDE message was sent */
 	}
+	#endif
 }
 
 uint8_t min(uint8_t x, uint8_t y){

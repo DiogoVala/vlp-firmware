@@ -33,6 +33,16 @@ uint8_t nrf24_config(uint8_t *TX_addr, uint8_t *RX_addr)
 	
 	_delay_ms(5); /* Some startup settling time */
 	
+	/* Flush RX FIFO */
+	nrf24_csn_digitalWrite(LOW);
+	spi_exchange(FLUSH_RX);
+	nrf24_csn_digitalWrite(HIGH);
+		
+	/* Flush TX FIFO */
+	nrf24_csn_digitalWrite(LOW);
+	spi_exchange(FLUSH_TX);
+	nrf24_csn_digitalWrite(HIGH);
+	
 	/* Address width */
 	nrf24_configRegister(SETUP_AW, (NRF24_ADDR_WIDTH-2) << AW); 
 	
@@ -61,7 +71,8 @@ uint8_t nrf24_config(uint8_t *TX_addr, uint8_t *RX_addr)
 	nrf24_configRegister(EN_AA,(1<<ENAA_P0)|(1<<ENAA_P1)|(0<<ENAA_P2)|(0<<ENAA_P3)|(0<<ENAA_P4)|(0<<ENAA_P5));
 
 	/* Auto retransmit delay: 2000 us and Up to 15 retransmissions */
-	nrf24_configRegister(SETUP_RETR,(0x07<<ARD)|(0x0F<<ARC));
+	//nrf24_configRegister(SETUP_RETR,(0x07<<ARD)|(0x0F<<ARC));
+	nrf24_configRegister(SETUP_RETR,(0x01<<ARD)|(0x0F<<ARC));
 	
 	/* Reset status bits */
 	nrf24_configRegister(STATUS, (1 << RX_DR) | (1 << TX_DS) | (1 << MAX_RT));
@@ -282,7 +293,7 @@ void nrf24_setMode_RX()
 		nrf24_configRegister(EN_RXADDR,(0<<ERX_P0)|(1<<ERX_P1));
 	
 		/* Settling time */
-		_delay_us(100);
+		//_delay_us(100);
 	
 		/* Turn on chip */
 		nrf24_ce_digitalWrite(HIGH);
@@ -307,7 +318,7 @@ void nrf24_setMode_TX()
 		nrf24_configRegister(EN_RXADDR,(1<<ERX_P0)|(0<<ERX_P1));
 	
 		/* Settling time */
-		_delay_us(100); 
+		//_delay_us(100); 
 		
 		rf24_mode=MODE_TX;
 	}
@@ -337,10 +348,10 @@ void nrf24_ce_digitalWrite(uint8_t state)
 {
 	if(state){
 		set_bit(NRF24_PORT,NRF24_CE);
-		_delay_us(10); /* Minimum CE High period for stuff to work */
+		//_delay_us(10); /* Minimum CE High period for stuff to work */
 	}
 	else{
-		_delay_us(200); /* Minimum CE interval from last edge */
+		//_delay_us(200); /* Minimum CE interval from last edge */
 		clr_bit(NRF24_PORT,NRF24_CE);
 	}
 }
