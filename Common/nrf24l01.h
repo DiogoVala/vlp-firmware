@@ -19,7 +19,7 @@
 #include "nrf24l01_config.h"
 
 /* RF24 Module operating at (2400 + NRF24_CHANNEL) MHz*/
-#define NRF24_CHANNEL 2
+#define NRF24_CHANNEL 50
 
 /* Address width - 3, 4 or 5 bytes */
 #define NRF24_ADDR_WIDTH 3
@@ -63,6 +63,7 @@ uint8_t nrf24_dataReady();
 uint8_t nrf24_rxFifoEmpty();
 uint8_t nrf24_getStatus();
 void	nrf24_resetStatus();
+void nrf24_write_ack();
 
 /* Used in dynamic length mode */
 uint8_t nrf24_payloadLength();
@@ -73,6 +74,9 @@ uint8_t nrf24_wait_tx_result();
 /* Mode of operation management */
 void	nrf24_setMode_RX();
 void	nrf24_setMode_TX();
+
+void nrf24_flushTX();
+void nrf24_flushRX();
 
 /* Low level interface */
 void	nrf24_configRegister(uint8_t reg, uint8_t value);

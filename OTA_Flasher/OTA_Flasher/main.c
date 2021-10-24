@@ -34,10 +34,13 @@
 /* STK500 Messages */
 #define CRC_EOP 0x20  /* Every avrdude message ends with this byte */
 
+#define RECEIVING 0
+#define SENDING 1
+
 static bool first_tx = false;
 
 /* When CRC_EOP is received, new_tx turns true, which means a message is ready to be sent */
-static bool new_tx = false;
+static bool mode = SENDING;
 
 /* UART Buffer */
 static uint8_t uart_buffer[UART_BUFFER_SIZE];
@@ -63,7 +66,7 @@ static void uart_handler(uint8_t byte){
 	uart_buffer[buf_len++]=byte;
 	
 	if(byte == CRC_EOP){ /* End of AVRDUDE message */
-		new_tx=true;
+		mode=SENDING;
 	}
 	#if 0
 	if(byte == 'b')
@@ -104,7 +107,6 @@ int main() {
 		nrf24_wait_tx_result();
 		for(uint32_t i=0; i<10000000; i++);
 		#endif
-		
 		uart_to_rf();
 		rf_to_uart();
 	}
@@ -115,8 +117,6 @@ static void rf_to_uart(void){
 	static uint8_t pkt_id = UINT8_MAX; /* Number of the packet we are currently receiving */
 	static uint8_t pkt_len=0; /* Length of packet received from RF24 */
 	static uint8_t pkt_buf[NRF24_MAX_PAYLOAD]; /* Stores packets from RF24 */
-
-	//while(nrf24_rxFifoEmpty() == NRF24_DATA_UNAVAILABLE);
 
 	if(nrf24_rxFifoEmpty() == NRF24_DATA_AVAILABLE){
 		
@@ -160,8 +160,8 @@ static void uart_to_rf(void) {
 			first_tx_complete=true;
 			
 			/* Give the board time to reboot and enter the Bootloader */
-			my_delay(100);
-			//for (uint32_t i=0; i<10000; i++);
+			
+			for (uint32_t i=0; i<100000; i++);
 			
 			
 		}
@@ -187,12 +187,13 @@ static void uart_to_rf(void) {
 		
 		tx_retries = TX_RETRIES;
 		while (--tx_retries) { /* Send until received or retry amount reached */
-			my_delay(4); /* Give the receiver some time to process data */
+			for(uint16_t i=0; i<1000; i++); /* Give the receiver some time to process data */
 			
 			nrf24_sendData(pkt_buf, pkt_len+1); /* ID + buffer */
 			if (nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
 				break;
 		}
+		mode == RECEIVING;
 	}
 	#if 0
 	else if(new_tx){ /* A new AVRDUDE packet has been assembled in the buffer and is ready to be sent */
