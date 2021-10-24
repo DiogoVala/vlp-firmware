@@ -73,7 +73,7 @@ ISR(TIMER1_COMPB_vect) // Timer1 ISR COMPB
 
 int main() {
 	
-	//wdt_disable();
+	wdt_disable();
 	
 	uint8_t LED_HW_ID;
 	uint8_t TX_addr[NRF24_ADDR_WIDTH]={'M', 'T', 'R'};
@@ -83,8 +83,8 @@ int main() {
 
 	uart_init();
 	
-	//uart_puts("\n\x1b[2J\r"); /*Clear screen */
-	//uart_puts("\r\nInitializing Luminary.");
+	uart_puts("\n\x1b[2J\r"); /*Clear screen */
+	uart_puts("\r\nInitializing Luminary.");
 	
 	spi_init();
 	

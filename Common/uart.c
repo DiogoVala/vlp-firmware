@@ -65,7 +65,7 @@ uint8_t uart_getc()
 }
 
 /* Callback function pointer */
-static void (*uart_rx_handler)(uint8_t ch) = NULL;
+void (*uart_rx_handler)(uint8_t ch) = NULL;
 
 /* Set RX callback function */
 void uart_set_RX_handler(void (*handler)(uint8_t ch)) {
