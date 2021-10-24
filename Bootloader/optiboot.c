@@ -64,7 +64,7 @@ asm("  .section .version\n"
 #define WATCHDOG_4S     (_BV(WDP3) | _BV(WDE))
 #define WATCHDOG_8S     (_BV(WDP3) | _BV(WDP0) | _BV(WDE))
 
-#define WATCHDOG_SELECTION WATCHDOG_2S /* Select what watchdog setting to use */
+#define WATCHDOG_SELECTION WATCHDOG_1S /* Select what watchdog setting to use */
 
 /*
  * NRWW memory
@@ -422,6 +422,7 @@ void putch(char ch) {
     static uint8_t pkt_buf[NRF24_MAX_PAYLOAD]={};
     uint32_t tx_retries = 100;
 
+    watchdogReset();
     if (radio_mode == RADIO_OFF) {
     	while (( UCSR0A & _BV(UDRE0)) == 0);
 		UDR0 = ch;
@@ -429,9 +430,7 @@ void putch(char ch) {
     else
     {
     	pkt_buf[pkt_len++] = ch; /* Fill the local buffer */
-        
     	if (ch == STK_OK || pkt_len >= MAX_PLD_SIZE) {
-    		watchdogReset();
     		while(tx_retries--) {
 	    		my_delay(5);
 	    		nrf24_sendData(pkt_buf, pkt_len);
@@ -485,9 +484,6 @@ uint8_t getch(void) {
 			}
 
 			ch = pkt_buf[1]; /* Grab next byte in the buffer */
-
-			while (( UCSR0A & _BV(UDRE0)) == 0);
-       		UDR0 = ch;
 
 			for(uint8_t i=1; i<NRF24_MAX_PAYLOAD-1;i++){
 				pkt_buf[i]=pkt_buf[i+1];
