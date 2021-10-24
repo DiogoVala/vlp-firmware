@@ -107,12 +107,8 @@ int main() {
 	sei(); /* Enable interrupts */
 	
 	while(1){
-		#if 0
-		nrf24_sendData(test, 8); /* ID + buffer */
-		nrf24_wait_tx_result();
-		for(uint32_t i=0; i<10000000; i++);
-		#endif
 		uart_to_rf();
+		my_delay(20);
 		rf_to_uart();
 	}
 }
@@ -156,7 +152,7 @@ static void uart_to_rf(void) {
 	sei();
 	
 	if( new_tx || (buf_len >= MAX_PLD_SIZE)){ /* A new AVRDUDE packet has been assembled in the buffer and is ready to be sent */
-		
+		new_tx=false;
 		/* Sends reset command */
 		send_first_tx();
 		
@@ -187,7 +183,7 @@ static void uart_to_rf(void) {
 			if (nrf24_wait_tx_result() == NRF24_MESSAGE_SENT)
 			break;
 		}
-		new_tx=false;
+		
 	}
 }
 
